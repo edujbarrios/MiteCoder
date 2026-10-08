@@ -29,9 +29,16 @@ def test_successful_edit_is_verified_automatically(tmp_path: Path) -> None:
             },
         ]
     )
+    config = Config(
+        testing=RuntimeTestingConfig(
+            commands=(
+                'python -c "from calculator import add; raise SystemExit(add(2, 3) != 5)"',
+            )
+        )
+    )
 
     result, _ = run_agent(
-        "Fix the failing test", Workspace(tmp_path), Config(), backend, write_artifacts=False
+        "Fix the failing test", Workspace(tmp_path), config, backend, write_artifacts=False
     )
 
     assert result.status == "COMPLETED"

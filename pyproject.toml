@@ -13,7 +13,7 @@ license-files = ["LICENSE", "NOTICE"]
 authors = [{name = "Eduardo J. Barrios"}]
 keywords = ["coding-agent", "edge-ml", "offline", "slm", "gguf", "llama-cpp"]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 4 - Beta",
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",

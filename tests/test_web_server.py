@@ -24,7 +24,9 @@ def application(tmp_path: Path) -> WebApplication:
 def test_lists_reads_and_writes_workspace_files(tmp_path: Path) -> None:
     app = application(tmp_path)
 
-    assert app.tree() == [{"path": "main.py", "size": 10 + 1}]
+    assert app.tree() == [
+        {"path": "main.py", "size": (tmp_path / "repo" / "main.py").stat().st_size}
+    ]
     assert app.read_file("main.py") == "value = 1\n"
     app.write_file("main.py", "value = 2\n")
 
@@ -47,7 +49,7 @@ def test_opens_another_existing_codebase(tmp_path: Path) -> None:
     project = app.open_repository(str(other))
 
     assert project["root"] == str(other.resolve())
-    assert app.tree() == [{"path": "app.py", "size": 14}]
+    assert app.tree() == [{"path": "app.py", "size": (other / "app.py").stat().st_size}]
 
 
 def test_rejects_missing_codebase(tmp_path: Path) -> None:

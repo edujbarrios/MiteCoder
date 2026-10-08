@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import shlex
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -48,15 +50,22 @@ class RunTestsTool(Tool):
             ):
                 command.extend(("--rootdir", str(self.workspace.root)))
         try:
-            completed = subprocess.run(
-                command,
-                cwd=self.workspace.root,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout,
-                check=False,
-                shell=False,
-            )
+            # Use a fresh bytecode cache for every check. Otherwise a rapid,
+            # same-sized Python edit can be masked by a timestamp-valid stale
+            # .pyc file created by the previous test run.
+            with tempfile.TemporaryDirectory(prefix="mitecoder-pycache-") as pycache:
+                environment = os.environ.copy()
+                environment["PYTHONPYCACHEPREFIX"] = pycache
+                completed = subprocess.run(
+                    command,
+                    cwd=self.workspace.root,
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout,
+                    check=False,
+                    shell=False,
+                    env=environment,
+                )
         except (OSError, subprocess.TimeoutExpired) as exc:
             return ToolResult(False, f"test execution failed: {exc}")
         output = (completed.stdout + completed.stderr)[-20_000:]
