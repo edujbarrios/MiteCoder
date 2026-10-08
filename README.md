@@ -4,12 +4,18 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](https://www.python.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-6f42c1.svg)](LICENSE)
 
-**A small, offline coding agent for CPU-only computers.**
+**Keep coding with a local SLM while your powerful hardware is busy.**
 
-MiteCoder is designed as a useful companion for programming sessions on machines with modest RAM,
-no suitable GPU, and no reliable internet connection. It can answer questions about a local folder,
-read source code and Jupyter notebooks, edit files, and verify changes without sending the
-workspace to a cloud service.
+Training models and running other AI workloads can occupy the GPU and most of a workstation's
+resources for hours. MiteCoder explores a complementary approach: a lightweight coding agent that
+keeps assisting you locally through a small language model, a limited number of CPU cores, and a
+small RAM budget. Its CPU-first profiles target ordinary processors—including Intel Core i7-class
+machines—without requiring a free GPU or a cloud connection.
+
+MiteCoder can answer questions about a local folder, read source code and Jupyter notebooks, edit
+files, and verify changes. The goal is not to reproduce a large cloud agent, but to provide useful
+programming assistance with the fewest practical compute, memory, context, and token resources.
+Your workspace remains on the machine.
 
 MiteCoder is in **early development**, but its CLI, local web interface, model download, GGUF
 inference, constrained tools, verification loop, artifacts, and benchmark are functional.
