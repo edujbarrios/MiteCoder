@@ -1,0 +1,11 @@
+benchmark: MicroSWE
+version: "0.1"
+description: Original deterministic tasks for resource-constrained coding agents.
+license: Apache-2.0
+tasks:
+  - {id: parser-boundary-001, fixture: parser_boundary, language: python, category: bugfix, difficulty: easy, license: Apache-2.0, test_command: "pytest -q", description: "Fix integer parsing so surrounding whitespace is accepted but trailing content is rejected."}
+  - {id: missing-function-001, fixture: missing_function, language: python, category: implementation, difficulty: easy, license: Apache-2.0, test_command: "pytest -q", description: "Implement clamp with inclusive lower and upper bounds."}
+  - {id: off-by-one-001, fixture: off_by_one, language: python, category: bugfix, difficulty: easy, license: Apache-2.0, test_command: "pytest -q", description: "Fix chunks so the final complete chunk is retained."}
+  - {id: invalid-validation-001, fixture: invalid_validation, language: python, category: bugfix, difficulty: easy, license: Apache-2.0, test_command: "pytest -q", description: "Reject empty usernames and usernames longer than twelve characters."}
+  - {id: incorrect-sort-001, fixture: incorrect_sort, language: python, category: bugfix, difficulty: easy, license: Apache-2.0, test_command: "pytest -q", description: "Sort records by descending score and then ascending name."}
+  - {id: state-management-001, fixture: state_management, language: python, category: bugfix, difficulty: easy, license: Apache-2.0, test_command: "pytest -q", description: "Prevent Counter reset from changing other Counter instances."}

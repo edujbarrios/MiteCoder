@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mitecoder"
+version = "0.1.0"
+description = "An open-source, offline, CPU-first coding agent for Small Language Models."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{name = "Eduardo J. Barrios"}]
+keywords = ["coding-agent", "edge-ml", "offline", "slm", "gguf", "llama-cpp"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+llama = ["llama-cpp-python>=0.3.0"]
+dev = ["build>=1.2", "pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+mitecoder = "mitecoder.cli:main"
+
+[project.urls]
+Repository = "https://github.com/edujbarrios/MiteCoder"
+Issues = "https://github.com/edujbarrios/MiteCoder/issues"
+Changelog = "https://github.com/edujbarrios/MiteCoder/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/edujbarrios/MiteCoder#readme"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mitecoder"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [
+  ".test-*",
+  "benchmark-results",
+  "benchmarks/microswe/fixtures",
+  "dist",
+  "runs",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]

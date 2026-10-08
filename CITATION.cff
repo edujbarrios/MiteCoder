@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use MiteCoder in academic work or research, please cite this software using the metadata provided here."
+type: software
+title: "MiteCoder: A CPU-First Offline Coding Agent for Small Language Models"
+version: 0.1.0
+license: Apache-2.0
+repository-code: "https://github.com/edujbarrios/MiteCoder"
+authors:
+  - family-names: Barrios
+    given-names: "Eduardo J."

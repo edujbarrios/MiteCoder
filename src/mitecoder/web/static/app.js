@@ -1,0 +1,209 @@
+const state = { activePath: null, dirty: false, files: [], prompts: [] };
+const $ = (id) => document.getElementById(id);
+
+async function api(path, options = {}) {
+  const response = await fetch(path, { headers: { "Content-Type": "application/json" }, ...options });
+  const body = await response.json();
+  if (!response.ok) throw new Error(body.error || `Request failed: ${response.status}`);
+  return body;
+}
+
+function iconFor(path) {
+  const extension = path.split(".").pop().toLowerCase();
+  return ({ py: "PY", js: "JS", json: "{}", yaml: "Y", yml: "Y", md: "#", toml: "T" })[extension] || "·";
+}
+
+async function loadProject() {
+  const project = await api("/api/project");
+  $("project-name").textContent = project.name;
+  $("project-name").title = project.root;
+  $("model-name").textContent = project.model;
+  $("commands").textContent = project.commands.length ? `Allowed checks: ${project.commands.join(" · ")}` : "No test commands configured";
+  await refreshTree();
+}
+
+async function browseFolder(path) {
+  const data = await api(`/api/directories${path ? `?path=${encodeURIComponent(path)}` : ""}`);
+  $("current-folder").textContent = data.path;
+  $("current-folder").title = data.path;
+  $("folder-dialog").dataset.path = data.path;
+  $("parent-folder").disabled = !data.parent;
+  $("parent-folder").dataset.path = data.parent || "";
+  const rows = data.folders.map((folder) => {
+    const button = document.createElement("button");
+    button.className = "folder-row";
+    button.innerHTML = '<span class="folder-icon">▸</span><span></span>';
+    button.lastElementChild.textContent = folder.name;
+    button.addEventListener("dblclick", () => browseFolder(folder.path));
+    button.addEventListener("click", () => browseFolder(folder.path));
+    return button;
+  });
+  $("folder-list").replaceChildren(...rows);
+}
+
+async function openProject() {
+  if (state.dirty && !confirm("Discard unsaved changes and open another project?")) return;
+  $("folder-dialog").showModal();
+  try {
+    await browseFolder($("project-name").title);
+  } catch (error) { $("folder-dialog").close(); $("console").innerHTML = `<span class="bad">${escapeText(error.message)}</span>`; }
+}
+
+async function selectFolder() {
+  const path = $("folder-dialog").dataset.path;
+  try {
+    await api("/api/project", { method: "POST", body: JSON.stringify({ path }) });
+    state.activePath = null; state.dirty = false; state.files = [];
+    $("active-tab").textContent = "No file open";
+    $("active-tab").className = "tab empty";
+    $("editor-wrap").classList.add("hidden");
+    $("empty-editor").classList.remove("hidden");
+    $("save-button").disabled = true;
+    await loadProject();
+    $("folder-dialog").close();
+    $("console").textContent = `Opened local codebase: ${path}`;
+  } catch (error) { $("console").innerHTML = `<span class="bad">${escapeText(error.message)}</span>`; }
+}
+
+function rememberPrompt(task) {
+  state.prompts = [task, ...state.prompts.filter((item) => item !== task)].slice(0, 12);
+  const options = state.prompts.map((item) => new Option(item.slice(0, 70), item));
+  $("prompt-history").replaceChildren(new Option("Previous prompts", ""), ...options);
+}
+
+async function refreshTree() {
+  const data = await api("/api/tree");
+  state.files = data.files;
+  renderTree();
+}
+
+function renderTree() {
+  const query = $("file-filter").value.trim().toLowerCase();
+  const visible = state.files.filter((file) => file.path.toLowerCase().includes(query));
+  const tree = $("file-tree");
+  tree.replaceChildren(...visible.map((file) => {
+    const button = document.createElement("button");
+    button.className = `file${file.path === state.activePath ? " active" : ""}`;
+    button.title = `${file.path} · ${file.size} bytes`;
+    button.innerHTML = `<span class="file-icon">${iconFor(file.path)}</span><span class="file-name"></span>`;
+    button.querySelector(".file-name").textContent = file.path;
+    button.addEventListener("click", () => openFile(file.path));
+    return button;
+  }));
+  if (!visible.length) {
+    const empty = document.createElement("div");
+    empty.className = "console-placeholder";
+    empty.textContent = query ? "No matching files" : "No editable files found";
+    tree.replaceChildren(empty);
+  }
+}
+
+async function openFile(path) {
+  if (state.dirty && !confirm("Discard unsaved changes?")) return;
+  const data = await api(`/api/file?path=${encodeURIComponent(path)}`);
+  state.activePath = path;
+  state.dirty = false;
+  $("dirty-state").textContent = "Saved";
+  $("dirty-state").className = "";
+  $("active-tab").textContent = path.split("/").pop();
+  $("active-tab").classList.remove("empty");
+  $("editor").value = data.content;
+  $("empty-editor").classList.add("hidden");
+  $("editor-wrap").classList.remove("hidden");
+  $("save-button").disabled = false;
+  updateLines(); updateCursor(); refreshTree();
+}
+
+async function saveFile() {
+  if (!state.activePath) return;
+  await api("/api/file", { method: "PUT", body: JSON.stringify({ path: state.activePath, content: $("editor").value }) });
+  state.dirty = false;
+  $("dirty-state").textContent = "Saved";
+  $("dirty-state").className = "";
+  $("active-tab").textContent = state.activePath.split("/").pop();
+}
+
+function updateLines() {
+  const count = $("editor").value.split("\n").length;
+  $("line-numbers").textContent = Array.from({ length: count }, (_, i) => i + 1).join("\n");
+}
+
+function updateCursor() {
+  const editor = $("editor");
+  const before = editor.value.slice(0, editor.selectionStart).split("\n");
+  $("cursor-position").textContent = `Ln ${before.length}, Col ${before.at(-1).length + 1}`;
+}
+
+function printResult(result) {
+  const success = result.status === "COMPLETED" && result.verification_passed === true;
+  const answered = result.status === "COMPLETED" && result.reason === "answered";
+  $("console").innerHTML = `<span class="${success || answered ? "ok" : "bad"}">${success ? "✓ VERIFIED" : answered ? "ANSWER" : "✕ " + result.status}</span>\n\n` +
+    `<span class="key">Summary</span>  ${escapeText(result.summary)}\n` +
+    `<span class="key">Reason</span>   ${escapeText(result.reason)}\n` +
+    `<span class="key">Steps</span>    ${result.steps}\n` +
+    `<span class="key">Tokens</span>   ${result.input_tokens} in · ${result.output_tokens} out\n` +
+    `<span class="key">Time</span>     ${Number(result.wall_seconds).toFixed(2)}s\n` +
+    `<span class="key">Artifacts</span> ${escapeText(result.artifacts || "none")}`;
+  $("agent-state").textContent = success ? "Verified" : answered ? "Answered" : "Needs review";
+  $("agent-state").className = `agent-state ${success || answered ? "success" : "failure"}`;
+}
+
+function escapeText(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+}
+
+async function runAgent() {
+  const task = $("task-input").value.trim();
+  if (!task) { $("task-input").focus(); return; }
+  if (state.dirty) await saveFile();
+  rememberPrompt(task);
+  $("run-button").disabled = true;
+  $("agent-state").textContent = "Running";
+  $("agent-state").className = "agent-state running";
+  $("console").textContent = "Loading the local model and running the agent…";
+  try {
+    const result = await api("/api/run", { method: "POST", body: JSON.stringify({ task }) });
+    printResult(result);
+    await refreshTree();
+    if (state.activePath) await openFile(state.activePath);
+  } catch (error) {
+    $("console").innerHTML = `<span class="bad">${escapeText(error.message)}</span>`;
+    $("agent-state").textContent = "Failed";
+    $("agent-state").className = "agent-state failure";
+  } finally { $("run-button").disabled = false; }
+}
+
+$("editor").addEventListener("input", () => { state.dirty = true; $("active-tab").textContent = `${state.activePath.split("/").pop()} ●`; updateLines(); });
+$("editor").addEventListener("scroll", () => { $("line-numbers").scrollTop = $("editor").scrollTop; });
+$("editor").addEventListener("input", () => {
+  $("dirty-state").textContent = "Unsaved changes";
+  $("dirty-state").className = "dirty";
+});
+$("editor").addEventListener("keyup", updateCursor);
+$("editor").addEventListener("click", updateCursor);
+$("save-button").addEventListener("click", saveFile);
+$("refresh-button").addEventListener("click", refreshTree);
+$("file-filter").addEventListener("input", renderTree);
+$("open-project").addEventListener("click", openProject);
+$("close-folder").addEventListener("click", () => $("folder-dialog").close());
+$("parent-folder").addEventListener("click", (event) => browseFolder(event.currentTarget.dataset.path));
+$("select-folder").addEventListener("click", selectFolder);
+$("run-button").addEventListener("click", runAgent);
+$("agent-toggle").addEventListener("click", () => {
+  const open = $("agent-panel").classList.toggle("open");
+  $("agent-toggle").setAttribute("aria-expanded", String(open));
+});
+$("new-task").addEventListener("click", () => { $("task-input").value = ""; $("task-input").focus(); });
+$("prompt-history").addEventListener("change", (event) => { if (event.target.value) $("task-input").value = event.target.value; });
+$("clear-console").addEventListener("click", () => { $("console").innerHTML = '<div class="console-placeholder">Agent output will appear here.</div>'; });
+document.addEventListener("keydown", (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); saveFile(); } });
+document.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+    event.preventDefault();
+    runAgent();
+  }
+});
+window.addEventListener("beforeunload", (event) => {
+  if (state.dirty) event.preventDefault();
+});
+loadProject().catch((error) => { $("console").textContent = error.message; });

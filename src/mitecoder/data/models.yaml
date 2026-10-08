@@ -1,0 +1,24 @@
+manifest_version: 1
+models:
+  qwen2.5-coder-0.5b-q4:
+    family: qwen2.5-coder
+    parameters: "0.5B"
+    format: gguf
+    quantization: Q4_K_M
+    filename: qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
+    sha256: "1d9614638d18024d0fbb36575a15f1302a3adf044df10345688ec4f6e1c4ff32"
+    context_length: 4096
+    source: "https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B-Instruct-GGUF"
+    upstream_license: Apache-2.0
+    recommended_profile: ultra_low
+  qwen2.5-coder-1.5b-q4:
+    family: qwen2.5-coder
+    parameters: "1.5B"
+    format: gguf
+    quantization: Q4_K_M
+    filename: qwen2.5-coder-1.5b-instruct-q4_k_m.gguf
+    sha256: "cc324af070c2ecbfd324a30884d2f951a7ff756aba85cb811a6ec436933bb046"
+    context_length: 32768
+    source: "https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF"
+    upstream_license: Apache-2.0
+    recommended_profile: balanced

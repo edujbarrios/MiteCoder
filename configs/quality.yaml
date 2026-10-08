@@ -1,0 +1,30 @@
+profile: quality
+inference:
+  backend: llama_cpp
+  model: qwen2.5-coder-1.5b-q4
+  context_length: 4096
+  max_output_tokens: 768
+  temperature: 0.0
+  top_p: 1.0
+  top_k: 1
+  seed: 42
+  threads: 8
+  batch_size: 128
+  mmap: true
+  mlock: false
+retrieval:
+  strategy: hybrid
+  max_files: 8
+  max_lines_per_file: 180
+  max_context_tokens: 3000
+agent:
+  max_steps: 14
+  max_llm_calls: 14
+  max_tool_calls: 28
+  max_wall_seconds: 1200
+runtime:
+  max_ram_mb: 4096
+  artifact_dir: runs
+testing:
+  commands: ["pytest -q"]
+  timeout_seconds: 240

@@ -1,0 +1,9 @@
+[
+  {
+    "action": "answer",
+    "arguments": {
+      "text": "The example defines an add function. Its intentionally broken implementation subtracts the right operand so the agent has a small, testable repair task."
+    },
+    "summary": "answer from the supplied workspace context"
+  }
+]

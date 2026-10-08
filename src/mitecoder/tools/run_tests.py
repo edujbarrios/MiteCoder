@@ -1,0 +1,85 @@
+"""Run only administrator-configured test commands."""
+
+from __future__ import annotations
+
+import shlex
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+from mitecoder.repository.workspace import Workspace
+from mitecoder.tools.base import Tool, ToolResult
+
+
+def _split_command(command: str) -> list[str]:
+    arguments = shlex.split(command, posix=sys.platform != "win32")
+    if sys.platform == "win32":
+        arguments = [
+            argument[1:-1]
+            if len(argument) >= 2 and argument[0] == argument[-1] and argument[0] in "\"'"
+            else argument
+            for argument in arguments
+        ]
+    return arguments
+
+
+class RunTestsTool(Tool):
+    name = "run_tests"
+    description = "Run a configured test command; model-supplied commands are rejected."
+    schema = {"type": "object", "properties": {"index": {"type": "integer"}}}
+
+    def __init__(
+        self, workspace: Workspace, commands: tuple[str, ...], timeout: float = 120.0
+    ) -> None:
+        self.workspace, self.commands, self.timeout = workspace, commands, timeout
+
+    def execute(self, arguments: dict[str, Any]) -> ToolResult:
+        if "command" in arguments:
+            return ToolResult(False, "model-supplied commands are forbidden")
+        index = int(arguments.get("index", 0))
+        if not 0 <= index < len(self.commands):
+            return ToolResult(False, "configured test command index is invalid")
+        command = _split_command(self.commands[index])
+        if command and Path(command[0]).stem.lower() == "pytest":
+            command = [sys.executable, "-m", "pytest", *command[1:]]
+            if not any(
+                argument == "--rootdir" or argument.startswith("--rootdir=") for argument in command
+            ):
+                command.extend(("--rootdir", str(self.workspace.root)))
+        try:
+            completed = subprocess.run(
+                command,
+                cwd=self.workspace.root,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout,
+                check=False,
+                shell=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return ToolResult(False, f"test execution failed: {exc}")
+        output = (completed.stdout + completed.stderr)[-20_000:]
+        return ToolResult(
+            completed.returncode == 0,
+            output,
+            metadata={"returncode": completed.returncode, "command_index": index},
+        )
+
+    def execute_all(self) -> ToolResult:
+        """Run every operator-configured check, stopping at the first failure."""
+        outputs: list[str] = []
+        for index, configured_command in enumerate(self.commands):
+            result = self.execute({"index": index})
+            outputs.append(f"$ {configured_command}\n{result.output}".rstrip())
+            if not result.success:
+                return ToolResult(
+                    False,
+                    "\n\n".join(outputs)[-20_000:],
+                    metadata={"failed_command_index": index, "commands_run": index + 1},
+                )
+        return ToolResult(
+            True,
+            "\n\n".join(outputs)[-20_000:],
+            metadata={"commands_run": len(self.commands)},
+        )
