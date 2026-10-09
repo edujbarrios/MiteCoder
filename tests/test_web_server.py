@@ -70,6 +70,23 @@ def test_folder_picker_lists_only_directories(tmp_path: Path) -> None:
     assert result["folders"] == [{"name": "package", "path": str(folder.resolve())}]
 
 
+def test_terminal_runs_only_a_configured_command(tmp_path: Path) -> None:
+    app = application(tmp_path)
+
+    result = app.run_command(0)
+
+    assert result["command"] == "pytest -q"
+    assert isinstance(result["success"], bool)
+    assert result["returncode"] is not None
+
+
+def test_terminal_rejects_unknown_command_index(tmp_path: Path) -> None:
+    app = application(tmp_path)
+
+    with pytest.raises(ValueError, match="index"):
+        app.run_command(99)
+
+
 def test_web_server_only_binds_to_localhost(tmp_path: Path) -> None:
     from mitecoder.web.server import serve
 
@@ -92,8 +109,10 @@ def test_static_responses_include_local_security_headers(tmp_path: Path) -> None
             assert response.headers["Cache-Control"] == "no-store"
             page = response.read().decode("utf-8")
             assert 'id="chat-messages"' in page
+            assert 'id="chat-empty"' in page
             assert 'id="chat-attach"' in page
             assert 'id="editor"' in page
+            assert 'id="terminal-panel"' in page
         with urlopen(
             f"http://127.0.0.1:{server.server_port}/app.bundle", timeout=5
         ) as response:

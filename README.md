@@ -6,16 +6,10 @@
 
 **Keep coding with a local SLM and enhanced agentic capabilities while your main hardware is busy.**
 
-Training models and running other AI workloads can occupy the GPU and most of a workstation's
-resources for hours. MiteCoder explores a complementary approach: a lightweight coding agent that
-keeps assisting you locally through a small language model, a limited number of CPU cores, and a
-small RAM budget. Its CPU-first profiles target ordinary processors—including Intel Core i7-class
-machines—without requiring a free GPU or a cloud connection.
-
-MiteCoder can answer questions about a local folder, read source code and Jupyter notebooks, edit
-files, and verify changes. The goal is not to reproduce a large cloud agent, but to provide useful
-programming assistance with the fewest practical compute, memory, context, and token resources.
-Your workspace remains on the machine.
+MiteCoder is a CPU-first coding agent for moments when the GPU and most system resources are busy
+with training or other AI workloads. It uses quantized SLMs, small contexts and limited RAM to
+answer questions, inspect a folder, edit files and verify changes without sending the workspace to
+a cloud service. The goal is useful local assistance—not reproducing a large cloud agent.
 
 MiteCoder is in **early development**, but its CLI, local web interface, model download, GGUF
 inference, constrained tools, verification loop, artifacts, and benchmark are functional.
@@ -37,31 +31,19 @@ mitecoder download-model qwen2.5-coder-0.5b-q4
 The model is downloaded from its official source, checked against the manifest SHA-256, and stored
 under `models/`. Agent execution itself remains offline.
 
-## Ask about a folder
+## Use the CLI
 
-A workspace may be a Git repository or an ordinary folder. Git is optional.
-
-```bash
-mitecoder run --workspace ./my-project \
-  --task "Explain how this project prepares its data" \
-  --config configs/ultra_low.yaml \
-  --model-path models/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
-```
-
-MiteCoder reads code, text, configuration, Markdown, and notebook cells. Read-only questions do not
-modify files or require a test run.
-
-## Change code
+A workspace may be a Git repository or an ordinary folder. Ask a question or request a change:
 
 ```bash
 mitecoder run --workspace ./examples/simple_bug \
-  --task "Fix the failing unit test" \
+  --task "Explain the failing test and fix it" \
   --config configs/ultra_low.yaml \
   --model-path models/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
 ```
 
-After changing a file, MiteCoder runs every configured check. It cannot report verified completion
-unless all checks pass.
+MiteCoder reads code, text, configuration, Markdown and notebook cells. Read-only questions do not
+change files. Edits cannot be reported as verified unless every configured check passes.
 
 ## Use the local interface
 
@@ -71,10 +53,13 @@ mitecoder web --workspace ./examples/simple_bug \
   --model-path models/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Attach a local code folder, talk to the agent
-in a familiar chat, and inspect or edit its changes in the file editor beside the conversation.
-Follow-up messages keep a small amount of recent context to remain useful with limited-context
-SLMs. The server binds only to localhost and loads no third-party web assets.
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765). The local workbench starts with an empty chat
+and combines a folder picker, file explorer, editor and integrated terminal. You decide whether to
+ask about the selected codebase, inspect a file or request a verified change. Follow-up messages
+keep only a small amount of recent context.
+
+The server binds only to localhost and loads no third-party assets. The terminal does not expose an
+arbitrary shell: it runs only the commands listed under `testing.commands` in the selected config.
 
 ## Why it can work with a small model
 
@@ -129,12 +114,8 @@ The browser interface lives in `frontend/` and is authored in strictly typed Typ
 - `tests/` — behavior, security, packaging, and architecture checks.
 - `benchmarks/` — the offline MicroSWE evaluation suite.
 
-Dependencies point inward: the CLI and frontend use the backend. A minimal `__main__` compatibility
-shim is the only backend-to-CLI reference, preserving `python -m mitecoder`. Generated frontend
-assets are packaged under `backend/src/mitecoder/web/static/`.
-
-MicroSWE is a small original offline benchmark for resource-constrained coding agents. It is not
-SWE-bench. Without `--model-path`, the command runs a deterministic framework smoke test.
+Generated frontend assets are packaged under `backend/src/mitecoder/web/static/`. MicroSWE is a
+small original offline benchmark, not SWE-bench.
 
 ## Limits
 

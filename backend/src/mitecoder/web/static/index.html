@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b0d12">
+  <meta name="theme-color" content="#0b1f1f">
   <title>MiteCoder — Local coding workspace</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2311131a'/%3E%3Cpath d='M9 23V9l7 8 7-8v14' fill='none' stroke='%237c5cff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1f1f'/%3E%3Cpath d='M9 23V9l7 8 7-8v14' fill='none' stroke='%2340e0d0' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -23,7 +23,7 @@
       <div class="local-note"><span>●</span> Offline workspace</div>
     </aside>
 
-    <section class="editor-shell panel">
+    <section id="workbench" class="editor-shell panel">
       <div class="tabs"><div id="active-tab" class="tab empty">No file open</div></div>
       <div id="empty-editor" class="empty-state">
         <div class="empty-mark">M</div>
@@ -36,13 +36,25 @@
         <pre id="line-numbers" aria-hidden="true">1</pre>
         <textarea id="editor" spellcheck="false" aria-label="Code editor"></textarea>
       </div>
+      <section id="terminal-panel" class="terminal-panel" aria-label="Workspace terminal">
+        <div class="terminal-header">
+          <div class="terminal-title"><span>TERMINAL</span><span class="terminal-safety">configured commands only</span></div>
+          <div class="terminal-actions">
+            <select id="terminal-command" aria-label="Configured command"></select>
+            <button id="terminal-run" class="terminal-run">Run</button>
+            <button id="terminal-clear" class="icon-button" title="Clear terminal" aria-label="Clear terminal">⌫</button>
+            <button id="terminal-toggle" class="icon-button" title="Hide terminal" aria-label="Hide terminal">⌄</button>
+          </div>
+        </div>
+        <pre id="terminal-output" class="terminal-output" aria-live="polite"><span class="terminal-muted">Select an allowed project command and run it here.</span></pre>
+      </section>
       <footer class="statusbar"><span id="dirty-state">Saved</span><span id="cursor-position">Ln 1, Col 1</span><span>UTF-8</span><span>Spaces: 4</span><span class="local-status">● Local only</span></footer>
     </section>
 
     <aside id="agent-panel" class="agent panel">
       <div class="chat-header">
         <div><span class="eyebrow">LOCAL CODING AGENT</span><h2>Workspace chat</h2></div>
-        <span id="agent-state" class="agent-state idle">Ready</span>
+        <div class="chat-actions"><button id="new-chat" class="new-chat" title="Start a new chat">＋ New</button><span id="agent-state" class="agent-state idle">Ready</span></div>
       </div>
       <div class="workspace-context">
         <div class="context-title"><span class="status-dot"></span><span id="chat-project-name">Workspace</span></div>
@@ -56,14 +68,15 @@
         <div id="commands" class="commands"></div>
       </div>
       <div id="chat-messages" class="chat-messages" role="log" aria-live="polite">
-        <article class="message assistant-message">
-          <div class="message-avatar">M</div>
-          <div class="message-body"><strong>MiteCoder</strong><p>Folder attached. Ask me to explain the code, inspect a file, or make a small verified change.</p></div>
-        </article>
-        <div class="quick-prompts" aria-label="Suggested tasks">
-          <button data-prompt="Explain the architecture of this codebase.">Explain this codebase</button>
-          <button data-prompt="Find a small bug, fix it, and verify the change.">Find and fix a bug</button>
-          <button data-prompt="Review the currently open file without changing it.">Review open file</button>
+        <div id="chat-empty" class="chat-empty">
+          <div class="chat-empty-mark">M</div>
+          <h3>What do you want to do?</h3>
+          <p>Ask a question, inspect the selected codebase, or request a verified change.</p>
+          <div class="quick-prompts" aria-label="Suggested tasks">
+            <button data-prompt="Explain the architecture of this codebase.">Explain this codebase</button>
+            <button data-prompt="Find a small bug, fix it, and verify the change.">Find and fix a bug</button>
+            <button data-prompt="Review the currently open file without changing it.">Review open file</button>
+          </div>
         </div>
       </div>
       <div class="chat-composer">

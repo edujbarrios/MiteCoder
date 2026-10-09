@@ -15,6 +15,7 @@ from mitecoder.config.loader import load_config
 from mitecoder.inference.factory import create_backend
 from mitecoder.repository.workspace import Workspace
 from mitecoder.runtime import run_agent
+from mitecoder.tools.run_tests import RunTestsTool
 
 STATIC_ROOT = Path(__file__).with_name("static")
 
@@ -104,6 +105,25 @@ class WebApplication:
         finally:
             self.run_lock.release()
 
+    def run_command(self, index: int) -> dict[str, Any]:
+        config = load_config(self.config_path)
+        if not 0 <= index < len(config.testing.commands):
+            raise ValueError("Configured command index is invalid")
+        if not self.run_lock.acquire(blocking=False):
+            raise RuntimeError("The workspace is already running a task")
+        try:
+            result = RunTestsTool(
+                self.workspace, config.testing.commands, config.testing.timeout_seconds
+            ).execute({"index": index})
+            return {
+                "command": config.testing.commands[index],
+                "success": result.success,
+                "output": result.output,
+                "returncode": result.metadata.get("returncode"),
+            }
+        finally:
+            self.run_lock.release()
+
 
 def make_handler(application: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
@@ -153,6 +173,15 @@ def make_handler(application: WebApplication) -> type[BaseHTTPRequestHandler]:
                 except RuntimeError as exc:
                     self._error(HTTPStatus.CONFLICT, str(exc))
                 except (OSError, ValueError, json.JSONDecodeError) as exc:
+                    self._error(HTTPStatus.BAD_REQUEST, str(exc))
+                return
+            if path == "/api/terminal":
+                try:
+                    data = self._body()
+                    self._json(application.run_command(int(data.get("index", -1))))
+                except RuntimeError as exc:
+                    self._error(HTTPStatus.CONFLICT, str(exc))
+                except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
                     self._error(HTTPStatus.BAD_REQUEST, str(exc))
                 return
             if path != "/api/run":

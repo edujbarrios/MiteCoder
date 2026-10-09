@@ -22,6 +22,7 @@ interface AgentResult {
   wall_seconds: number;
   artifacts?: string;
 }
+interface TerminalResult { command: string; success: boolean; output: string; returncode: number | null }
 
 interface ElementMap {
   "active-tab": HTMLDivElement;
@@ -29,6 +30,7 @@ interface ElementMap {
   "agent-state": HTMLSpanElement;
   "agent-toggle": HTMLButtonElement;
   "chat-attach": HTMLButtonElement;
+  "chat-empty": HTMLDivElement;
   "chat-messages": HTMLDivElement;
   "chat-project-name": HTMLSpanElement;
   commands: HTMLDivElement;
@@ -47,6 +49,7 @@ interface ElementMap {
   "folder-list": HTMLDivElement;
   "line-numbers": HTMLPreElement;
   "model-name": HTMLSpanElement;
+  "new-chat": HTMLButtonElement;
   "open-project": HTMLButtonElement;
   "parent-folder": HTMLButtonElement;
   "profile-value": HTMLElement;
@@ -58,6 +61,12 @@ interface ElementMap {
   "select-folder": HTMLButtonElement;
   "task-input": HTMLTextAreaElement;
   "task-count": HTMLElement;
+  "terminal-clear": HTMLButtonElement;
+  "terminal-command": HTMLSelectElement;
+  "terminal-output": HTMLPreElement;
+  "terminal-panel": HTMLElement;
+  "terminal-run": HTMLButtonElement;
+  "terminal-toggle": HTMLButtonElement;
   "threads-value": HTMLElement;
 }
 
@@ -65,11 +74,12 @@ type ChatRole = "user" | "assistant";
 type MessageStatus = "pending" | "success" | "failure";
 interface ChatTurn { role: ChatRole; text: string }
 
-const state: { activePath: string | null; dirty: boolean; files: FileEntry[]; conversation: ChatTurn[] } = {
+const state: { activePath: string | null; dirty: boolean; files: FileEntry[]; conversation: ChatTurn[]; commands: string[] } = {
   activePath: null,
   dirty: false,
   files: [],
   conversation: [],
+  commands: [],
 };
 
 function $<K extends keyof ElementMap>(id: K): ElementMap[K] {
@@ -88,7 +98,9 @@ async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
 function iconFor(path: string): string {
   const extension = path.split(".").pop()?.toLowerCase() ?? "";
   const icons: Record<string, string> = {
-    py: "PY", ts: "TS", json: "{}", yaml: "Y", yml: "Y", md: "#", toml: "T",
+    c: "C", cpp: "C+", css: "CS", go: "GO", html: "<>", ipynb: "NB", java: "JV",
+    js: "JS", jsx: "JX", json: "{}", md: "#", ps1: "PS", py: "PY", rs: "RS",
+    sh: "SH", sql: "DB", toml: "T", ts: "TS", tsx: "TX", yaml: "Y", yml: "Y",
   };
   return icons[extension] ?? "·";
 }
@@ -104,6 +116,9 @@ async function loadProject(): Promise<void> {
   $("threads-value").textContent = `${project.threads} threads`;
   $("ram-value").textContent = `${project.max_ram_mb} MB`;
   $("context-value").textContent = `${project.context_length} tokens`;
+  state.commands = project.commands;
+  $("terminal-command").replaceChildren(...project.commands.map((command, index) => new Option(command, String(index))));
+  $("terminal-run").disabled = project.commands.length === 0;
   $("commands").textContent = project.commands.length ? `Allowed checks: ${project.commands.join(" · ")}` : "No test commands configured";
   await refreshTree();
 }
@@ -133,6 +148,7 @@ function errorMessage(error: unknown): string {
 }
 
 function appendMessage(role: ChatRole, text: string, status?: MessageStatus): HTMLElement {
+  $("chat-empty").classList.add("hidden");
   const article = document.createElement("article");
   article.className = `message ${role}-message${status ? ` ${status}` : ""}`;
 
@@ -152,6 +168,17 @@ function appendMessage(role: ChatRole, text: string, status?: MessageStatus): HT
   $("chat-messages").append(article);
   $("chat-messages").scrollTop = $("chat-messages").scrollHeight;
   return article;
+}
+
+function resetChat(): void {
+  state.conversation = [];
+  $("chat-messages").querySelectorAll(".message").forEach((message) => message.remove());
+  $("chat-empty").classList.remove("hidden");
+  $("agent-state").textContent = "Ready";
+  $("agent-state").className = "agent-state idle";
+  $("task-input").value = "";
+  updateTaskCount();
+  $("task-input").focus();
 }
 
 function buildAgentTask(task: string): string {
@@ -178,7 +205,7 @@ async function selectFolder(): Promise<void> {
   const path = $("folder-dialog").dataset.path;
   try {
     await api<Project>("/api/project", { method: "POST", body: JSON.stringify({ path }) });
-    state.activePath = null; state.dirty = false; state.files = []; state.conversation = [];
+    state.activePath = null; state.dirty = false; state.files = [];
     $("active-tab").textContent = "No file open";
     $("active-tab").className = "tab empty";
     $("editor-wrap").classList.add("hidden");
@@ -186,7 +213,7 @@ async function selectFolder(): Promise<void> {
     $("save-button").disabled = true;
     await loadProject();
     $("folder-dialog").close();
-    appendMessage("assistant", `Attached local workspace: ${path}`);
+    resetChat();
   } catch (error) {
     appendMessage("assistant", errorMessage(error), "failure");
   }
@@ -323,6 +350,28 @@ async function runAgent(): Promise<void> {
   } finally { $("run-button").disabled = false; }
 }
 
+async function runTerminalCommand(): Promise<void> {
+  const index = Number($("terminal-command").value);
+  if (!Number.isInteger(index) || index < 0 || index >= state.commands.length) return;
+  $("terminal-panel").classList.remove("collapsed");
+  $("terminal-toggle").textContent = "⌄";
+  $("terminal-run").disabled = true;
+  $("terminal-output").className = "terminal-output";
+  $("terminal-output").textContent = `$ ${state.commands[index]}\nRunning…`;
+  try {
+    const result = await api<TerminalResult>("/api/terminal", { method: "POST", body: JSON.stringify({ index }) });
+    $("terminal-output").className = `terminal-output ${result.success ? "success" : "failure"}`;
+    $("terminal-output").textContent = `$ ${result.command}\n${result.output || `(process exited with code ${result.returncode ?? "unknown"})`}`;
+    await refreshTree();
+    if (state.activePath && !state.dirty) await openFile(state.activePath);
+  } catch (error) {
+    $("terminal-output").className = "terminal-output failure";
+    $("terminal-output").textContent = errorMessage(error);
+  } finally {
+    $("terminal-run").disabled = state.commands.length === 0;
+  }
+}
+
 $("editor").addEventListener("input", () => {
   state.dirty = true;
   const path = state.activePath;
@@ -346,6 +395,17 @@ $("close-folder").addEventListener("click", () => $("folder-dialog").close());
 $("parent-folder").addEventListener("click", () => browseFolder($("parent-folder").dataset.path));
 $("select-folder").addEventListener("click", selectFolder);
 $("run-button").addEventListener("click", runAgent);
+$("new-chat").addEventListener("click", resetChat);
+$("terminal-run").addEventListener("click", runTerminalCommand);
+$("terminal-clear").addEventListener("click", () => {
+  $("terminal-output").className = "terminal-output";
+  $("terminal-output").textContent = "Select an allowed project command and run it here.";
+});
+$("terminal-toggle").addEventListener("click", () => {
+  const collapsed = $("terminal-panel").classList.toggle("collapsed");
+  $("terminal-toggle").textContent = collapsed ? "⌃" : "⌄";
+  $("terminal-toggle").title = collapsed ? "Show terminal" : "Hide terminal";
+});
 $("agent-toggle").addEventListener("click", () => {
   const open = $("agent-panel").classList.toggle("open");
   $("agent-toggle").setAttribute("aria-expanded", String(open));
