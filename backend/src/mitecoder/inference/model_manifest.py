@@ -11,6 +11,7 @@ from typing import BinaryIO
 from urllib.request import Request, urlopen
 
 import yaml
+
 from mitecoder.exceptions import ModelVerificationError
 
 

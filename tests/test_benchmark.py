@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from mitecoder.benchmark import load_tasks, run_benchmark
 from mitecoder.config.schema import Config
 from mitecoder_cli.cli import _smoke_backend
