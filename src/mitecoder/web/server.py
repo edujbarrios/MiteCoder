@@ -199,7 +199,11 @@ def make_handler(application: WebApplication) -> type[BaseHTTPRequestHandler]:
                 self._error(HTTPStatus.NOT_FOUND, "Not found")
                 return
             payload = candidate.read_bytes()
-            content_type = mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
+            content_type = (
+                "application/javascript"
+                if candidate.suffix == ".bundle"
+                else mimetypes.guess_type(candidate.name)[0] or "application/octet-stream"
+            )
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", f"{content_type}; charset=utf-8")
             self.send_header("Content-Length", str(len(payload)))

@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "ES2022"],
+    "module": "none",
+    "outFile": "src/mitecoder/web/static/app.bundle",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "removeComments": true
+  },
+  "files": ["app.ts"]
+}

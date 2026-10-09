@@ -90,6 +90,10 @@ def test_static_responses_include_local_security_headers(tmp_path: Path) -> None
             assert response.headers["X-Frame-Options"] == "DENY"
             assert "default-src 'self'" in response.headers["Content-Security-Policy"]
             assert response.headers["Cache-Control"] == "no-store"
+        with urlopen(
+            f"http://127.0.0.1:{server.server_port}/app.bundle", timeout=5
+        ) as response:
+            assert response.headers["Content-Type"] == "application/javascript; charset=utf-8"
     finally:
         server.shutdown()
         server.server_close()

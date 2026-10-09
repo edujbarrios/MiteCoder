@@ -1,15 +1,16 @@
-* text=auto
-*.py text eol=lf
+* text=auto linguist-detectable=false
+*.py text eol=lf linguist-detectable=true
+*.ts text eol=lf linguist-detectable=true
 *.md text eol=lf
 *.toml text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
 *.json text eol=lf
-*.js text eol=lf
 *.css text eol=lf
 *.html text eol=lf
 *.sh text eol=lf
 *.ps1 text eol=crlf
+*.bundle text eol=lf linguist-generated=true
 *.gguf binary
 *.png binary
 *.jpg binary

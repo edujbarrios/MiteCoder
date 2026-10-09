@@ -9,6 +9,7 @@ coverage.xml
 htmlcov/
 .test-*/
 .venv/
+node_modules/
 dist/
 build/
 runs/

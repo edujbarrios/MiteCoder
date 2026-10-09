@@ -4,7 +4,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3776AB.svg)](https://www.python.org/)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-6f42c1.svg)](LICENSE)
 
-**Keep coding with a local SLM while your powerful hardware is busy.**
+**Keep coding with a local SLM and enhanced agentic capabilities while your main hardware is busy.**
 
 Training models and running other AI workloads can occupy the GPU and most of a workstation's
 resources for hours. MiteCoder explores a complementary approach: a lightweight coding agent that
@@ -111,8 +111,14 @@ quantization, context length, llama.cpp build, operating system, and hardware.
 python -m pip install -e ".[dev]"
 python -m pytest
 python -m ruff check src tests
+npm ci
+npm run check
+npm run build
 mitecoder benchmark --suite microswe --config configs/ultra_low.yaml
 ```
+
+The browser interface is authored in strictly typed TypeScript. `npm run build` compiles `app.ts`
+into the generated browser bundle shipped with the Python package.
 
 MicroSWE is a small original offline benchmark for resource-constrained coding agents. It is not
 SWE-bench. Without `--model-path`, the command runs a deterministic framework smoke test.
