@@ -1,5 +1,24 @@
 # Architecture
 
+## Repository boundaries
+
+MiteCoder uses a small layered monorepo:
+
+```text
+frontend (TypeScript) ──HTTP──┐
+                              ├──> backend (Python application core)
+cli (Python adapter) ─────────┘
+```
+
+`backend/` owns domain behavior and infrastructure abstractions. `cli/` translates command-line
+arguments into backend calls, while `frontend/` communicates only through the localhost HTTP API.
+The backend does not import either outer adapter in application code. Its minimal `__main__`
+compatibility shim delegates to the CLI solely to preserve `python -m mitecoder`. Architecture tests
+enforce this dependency rule, the absence of the legacy `src/` layout, and the separation between
+TypeScript sources and generated browser assets.
+
+## Agent composition
+
 The CLI composes a `Workspace`, retrieval strategy, `ContextBuilder`, inference backend, tool
 registry, `BudgetManager`, and metrics collector by dependency injection. In Edge ML terms, the
 SLM is only the local policy component; retrieval, tools, state transitions, verification, and
