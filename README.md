@@ -143,11 +143,9 @@ sandbox: project tests, native libraries, and dependencies run with the user's p
 
 Use a disposable branch or copy for edits, review every diff, and isolate untrusted dependencies.
 
-## More information
+## Project information
 
-[Architecture](docs/architecture.md) · [Benchmarking](docs/benchmarking.md) ·
-[Model support](docs/model_support.md) · [Security](SECURITY.md) ·
-[Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
+[Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [Changelog](CHANGELOG.md)
 
 MiteCoder is licensed under [Apache License 2.0](LICENSE). Models and third-party dependencies keep
 their upstream licenses. Citation metadata is available in [CITATION.cff](CITATION.cff).
