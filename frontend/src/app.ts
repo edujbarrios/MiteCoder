@@ -23,12 +23,17 @@ interface AgentResult {
   artifacts?: string;
 }
 interface TerminalResult { command: string; success: boolean; output: string; returncode: number | null }
+interface DiffResult { success: boolean; diff: string }
+interface BottomSnapshot { text: string; status: "" | "success" | "failure" }
 
 interface ElementMap {
   "active-tab": HTMLDivElement;
   "agent-panel": HTMLElement;
   "agent-state": HTMLSpanElement;
   "agent-toggle": HTMLButtonElement;
+  "bottom-changes-tab": HTMLButtonElement;
+  "bottom-terminal-tab": HTMLButtonElement;
+  "changes-refresh": HTMLButtonElement;
   "chat-attach": HTMLButtonElement;
   "chat-empty": HTMLDivElement;
   "chat-messages": HTMLDivElement;
@@ -62,6 +67,7 @@ interface ElementMap {
   "task-input": HTMLTextAreaElement;
   "task-count": HTMLElement;
   "terminal-clear": HTMLButtonElement;
+  "terminal-actions": HTMLDivElement;
   "terminal-command": HTMLSelectElement;
   "terminal-output": HTMLPreElement;
   "terminal-panel": HTMLElement;
@@ -74,12 +80,24 @@ type ChatRole = "user" | "assistant";
 type MessageStatus = "pending" | "success" | "failure";
 interface ChatTurn { role: ChatRole; text: string }
 
-const state: { activePath: string | null; dirty: boolean; files: FileEntry[]; conversation: ChatTurn[]; commands: string[] } = {
+const state: {
+  activePath: string | null;
+  dirty: boolean;
+  files: FileEntry[];
+  conversation: ChatTurn[];
+  commands: string[];
+  bottomMode: "terminal" | "changes";
+  terminal: BottomSnapshot;
+  changes: BottomSnapshot;
+} = {
   activePath: null,
   dirty: false,
   files: [],
   conversation: [],
   commands: [],
+  bottomMode: "terminal",
+  terminal: { text: "Select an allowed project command and run it here.", status: "" },
+  changes: { text: "Open Changes to inspect the current Git diff.", status: "" },
 };
 
 function $<K extends keyof ElementMap>(id: K): ElementMap[K] {
@@ -356,20 +374,58 @@ async function runTerminalCommand(): Promise<void> {
   $("terminal-panel").classList.remove("collapsed");
   $("terminal-toggle").textContent = "⌄";
   $("terminal-run").disabled = true;
-  $("terminal-output").className = "terminal-output";
-  $("terminal-output").textContent = `$ ${state.commands[index]}\nRunning…`;
+  state.terminal = { text: `$ ${state.commands[index]}\nRunning…`, status: "" };
+  renderBottomPanel();
   try {
     const result = await api<TerminalResult>("/api/terminal", { method: "POST", body: JSON.stringify({ index }) });
-    $("terminal-output").className = `terminal-output ${result.success ? "success" : "failure"}`;
-    $("terminal-output").textContent = `$ ${result.command}\n${result.output || `(process exited with code ${result.returncode ?? "unknown"})`}`;
+    state.terminal = {
+      text: `$ ${result.command}\n${result.output || `(process exited with code ${result.returncode ?? "unknown"})`}`,
+      status: result.success ? "success" : "failure",
+    };
+    renderBottomPanel();
     await refreshTree();
     if (state.activePath && !state.dirty) await openFile(state.activePath);
   } catch (error) {
-    $("terminal-output").className = "terminal-output failure";
-    $("terminal-output").textContent = errorMessage(error);
+    state.terminal = { text: errorMessage(error), status: "failure" };
+    renderBottomPanel();
   } finally {
     $("terminal-run").disabled = state.commands.length === 0;
   }
+}
+
+function renderBottomPanel(): void {
+  const snapshot = state[state.bottomMode];
+  $("terminal-output").className = `terminal-output${snapshot.status ? ` ${snapshot.status}` : ""}`;
+  $("terminal-output").textContent = snapshot.text;
+  $("bottom-terminal-tab").classList.toggle("active", state.bottomMode === "terminal");
+  $("bottom-changes-tab").classList.toggle("active", state.bottomMode === "changes");
+  $("terminal-actions").classList.toggle("hidden", state.bottomMode !== "terminal");
+  $("changes-refresh").classList.toggle("hidden", state.bottomMode !== "changes");
+}
+
+async function showChanges(): Promise<void> {
+  state.bottomMode = "changes";
+  $("terminal-panel").classList.remove("collapsed");
+  $("terminal-toggle").textContent = "⌄";
+  state.changes = { text: "Loading workspace diff…", status: "" };
+  renderBottomPanel();
+  try {
+    const result = await api<DiffResult>("/api/diff");
+    state.changes = {
+      text: result.diff || "No uncommitted Git changes in this workspace.",
+      status: result.success ? "success" : "failure",
+    };
+  } catch (error) {
+    state.changes = { text: errorMessage(error), status: "failure" };
+  }
+  renderBottomPanel();
+}
+
+function showTerminal(): void {
+  state.bottomMode = "terminal";
+  $("terminal-panel").classList.remove("collapsed");
+  $("terminal-toggle").textContent = "⌄";
+  renderBottomPanel();
 }
 
 $("editor").addEventListener("input", () => {
@@ -397,9 +453,12 @@ $("select-folder").addEventListener("click", selectFolder);
 $("run-button").addEventListener("click", runAgent);
 $("new-chat").addEventListener("click", resetChat);
 $("terminal-run").addEventListener("click", runTerminalCommand);
+$("bottom-terminal-tab").addEventListener("click", showTerminal);
+$("bottom-changes-tab").addEventListener("click", showChanges);
+$("changes-refresh").addEventListener("click", showChanges);
 $("terminal-clear").addEventListener("click", () => {
-  $("terminal-output").className = "terminal-output";
-  $("terminal-output").textContent = "Select an allowed project command and run it here.";
+  state.terminal = { text: "Select an allowed project command and run it here.", status: "" };
+  renderBottomPanel();
 });
 $("terminal-toggle").addEventListener("click", () => {
   const collapsed = $("terminal-panel").classList.toggle("collapsed");
@@ -425,6 +484,13 @@ document.querySelectorAll<HTMLButtonElement>("[data-prompt]").forEach((button) =
   });
 });
 document.addEventListener("keydown", (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); saveFile(); } });
+document.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === "`") {
+    event.preventDefault();
+    const collapsed = $("terminal-panel").classList.toggle("collapsed");
+    $("terminal-toggle").textContent = collapsed ? "⌃" : "⌄";
+  }
+});
 document.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
     event.preventDefault();

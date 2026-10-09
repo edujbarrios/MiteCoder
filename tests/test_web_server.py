@@ -87,6 +87,13 @@ def test_terminal_rejects_unknown_command_index(tmp_path: Path) -> None:
         app.run_command(99)
 
 
+def test_diff_reports_non_git_workspace_without_crashing(tmp_path: Path) -> None:
+    result = application(tmp_path).diff()
+
+    assert set(result) == {"success", "diff"}
+    assert isinstance(result["diff"], str)
+
+
 def test_web_server_only_binds_to_localhost(tmp_path: Path) -> None:
     from mitecoder.web.server import serve
 

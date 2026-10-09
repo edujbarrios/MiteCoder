@@ -15,6 +15,7 @@ from mitecoder.config.loader import load_config
 from mitecoder.inference.factory import create_backend
 from mitecoder.repository.workspace import Workspace
 from mitecoder.runtime import run_agent
+from mitecoder.tools.git_diff import GitDiffTool
 from mitecoder.tools.run_tests import RunTestsTool
 
 STATIC_ROOT = Path(__file__).with_name("static")
@@ -124,6 +125,10 @@ class WebApplication:
         finally:
             self.run_lock.release()
 
+    def diff(self) -> dict[str, Any]:
+        result = GitDiffTool(self.workspace).execute({})
+        return {"success": result.success, "diff": result.output}
+
 
 def make_handler(application: WebApplication) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
@@ -136,6 +141,9 @@ def make_handler(application: WebApplication) -> type[BaseHTTPRequestHandler]:
                 return
             if parsed.path == "/api/tree":
                 self._json({"files": application.tree()})
+                return
+            if parsed.path == "/api/diff":
+                self._json(application.diff())
                 return
             if parsed.path == "/api/directories":
                 path = parse_qs(parsed.query).get("path", [None])[0]

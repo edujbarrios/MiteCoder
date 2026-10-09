@@ -16,14 +16,17 @@ class GitDiffTool(Tool):
         self.workspace = workspace
 
     def execute(self, arguments: dict[str, Any]) -> ToolResult:
-        completed = subprocess.run(
-            ["git", "diff", "--no-ext-diff"],
-            cwd=self.workspace.root,
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
+        try:
+            completed = subprocess.run(
+                ["git", "diff", "--no-ext-diff"],
+                cwd=self.workspace.root,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return ToolResult(False, f"git diff unavailable: {exc}")
         return ToolResult(
             completed.returncode == 0, (completed.stdout + completed.stderr)[-50_000:]
         )

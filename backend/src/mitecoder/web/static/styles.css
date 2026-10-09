@@ -128,9 +128,11 @@ kbd { margin-left: 5px; padding: 2px 5px; border: 1px solid #343a47; border-radi
 .terminal-panel { height: 190px; min-height: 0; display: grid; grid-template-rows: 36px 1fr; border-top: 1px solid var(--line); background: #061011; }
 .terminal-panel.collapsed { height: 36px; }
 .terminal-panel.collapsed .terminal-output { display: none; }
-.terminal-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 8px 0 13px; border-bottom: 1px solid #132f34; }
-.terminal-title { display: flex; align-items: baseline; gap: 9px; color: #d3e6e2; font-size: 10px; font-weight: 750; letter-spacing: .1em; }
-.terminal-safety { color: #52716e; font-size: 9px; font-weight: 500; letter-spacing: 0; }
+.terminal-header { display: flex; align-items: center; gap: 8px; padding: 0 8px 0 10px; border-bottom: 1px solid #132f34; }
+.bottom-tabs { align-self: stretch; display: flex; align-items: stretch; gap: 10px; margin-right: auto; }
+.bottom-tab { position: relative; border: 0; background: transparent; color: #66807d; font-size: 10px; font-weight: 750; letter-spacing: .1em; }
+.bottom-tab.active { color: #d3e6e2; }
+.bottom-tab.active::after { content: ""; position: absolute; right: 0; bottom: 0; left: 0; height: 2px; background: var(--violet); }
 .terminal-actions { display: flex; align-items: center; gap: 6px; }
 .terminal-actions select { max-width: 270px; border: 1px solid #21484c; border-radius: 5px; padding: 4px 7px; outline: 0; background: #0b1b1c; color: #a9c1bd; font: 10px var(--mono); }
 .terminal-run { border: 1px solid #24877f; border-radius: 5px; padding: 4px 10px; background: #40e0d01a; color: var(--violet); font-size: 10px; font-weight: 700; }

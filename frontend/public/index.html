@@ -30,7 +30,7 @@
         <span class="eyebrow">PRIVATE BY DESIGN</span>
         <h1>Your code stays on this machine</h1>
         <p>Open a file from the explorer or describe a small, testable change to the local agent.</p>
-        <div class="shortcut-grid"><span><kbd>Ctrl S</kbd> Save file</span><span><kbd>Ctrl Enter</kbd> Run agent</span></div>
+        <div class="shortcut-grid"><span><kbd>Ctrl S</kbd> Save</span><span><kbd>Ctrl Enter</kbd> Run agent</span><span><kbd>Ctrl `</kbd> Terminal</span></div>
       </div>
       <div id="editor-wrap" class="editor-wrap hidden">
         <pre id="line-numbers" aria-hidden="true">1</pre>
@@ -38,13 +38,14 @@
       </div>
       <section id="terminal-panel" class="terminal-panel" aria-label="Workspace terminal">
         <div class="terminal-header">
-          <div class="terminal-title"><span>TERMINAL</span><span class="terminal-safety">configured commands only</span></div>
-          <div class="terminal-actions">
+          <div class="bottom-tabs"><button id="bottom-terminal-tab" class="bottom-tab active">TERMINAL</button><button id="bottom-changes-tab" class="bottom-tab">CHANGES</button></div>
+          <div id="terminal-actions" class="terminal-actions">
             <select id="terminal-command" aria-label="Configured command"></select>
             <button id="terminal-run" class="terminal-run">Run</button>
             <button id="terminal-clear" class="icon-button" title="Clear terminal" aria-label="Clear terminal">⌫</button>
-            <button id="terminal-toggle" class="icon-button" title="Hide terminal" aria-label="Hide terminal">⌄</button>
           </div>
+          <button id="changes-refresh" class="terminal-run hidden">Refresh diff</button>
+          <button id="terminal-toggle" class="icon-button" title="Hide bottom panel" aria-label="Hide bottom panel">⌄</button>
         </div>
         <pre id="terminal-output" class="terminal-output" aria-live="polite"><span class="terminal-muted">Select an allowed project command and run it here.</span></pre>
       </section>
