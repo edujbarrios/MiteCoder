@@ -4,6 +4,7 @@ import subprocess
 from typing import Any
 
 from mitecoder.repository.workspace import Workspace
+from mitecoder.subprocess_utils import combined_output, run_text
 from mitecoder.tools.base import Tool, ToolResult
 
 
@@ -17,16 +18,15 @@ class GitDiffTool(Tool):
 
     def execute(self, arguments: dict[str, Any]) -> ToolResult:
         try:
-            completed = subprocess.run(
+            completed = run_text(
                 ["git", "diff", "--no-ext-diff"],
                 cwd=self.workspace.root,
                 capture_output=True,
-                text=True,
                 timeout=10,
                 check=False,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             return ToolResult(False, f"git diff unavailable: {exc}")
         return ToolResult(
-            completed.returncode == 0, (completed.stdout + completed.stderr)[-50_000:]
+            completed.returncode == 0, combined_output(completed)[-50_000:]
         )

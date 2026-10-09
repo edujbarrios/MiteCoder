@@ -7,6 +7,7 @@ from collections import Counter
 from dataclasses import asdict, dataclass
 
 from mitecoder.repository.workspace import Workspace
+from mitecoder.subprocess_utils import run_text
 
 LANGUAGES = {
     ".py": "Python",
@@ -53,15 +54,14 @@ def inspect_workspace(workspace: Workspace) -> Inspection:
         frameworks.append("npm")
         commands.append("npm test")
     try:
-        proc = subprocess.run(
+        proc = run_text(
             ["git", "status", "--short"],
             cwd=workspace.root,
             capture_output=True,
-            text=True,
             timeout=5,
             check=False,
         )
-        git_status = proc.stdout.strip() or (
+        git_status = (proc.stdout or "").strip() or (
             "clean" if proc.returncode == 0 else "not a Git repository"
         )
     except (OSError, subprocess.TimeoutExpired):
