@@ -28,9 +28,10 @@ interface ElementMap {
   "agent-panel": HTMLElement;
   "agent-state": HTMLSpanElement;
   "agent-toggle": HTMLButtonElement;
-  "clear-console": HTMLButtonElement;
+  "chat-attach": HTMLButtonElement;
+  "chat-messages": HTMLDivElement;
+  "chat-project-name": HTMLSpanElement;
   commands: HTMLDivElement;
-  console: HTMLDivElement;
   "context-value": HTMLElement;
   "close-folder": HTMLButtonElement;
   "current-folder": HTMLSpanElement;
@@ -46,12 +47,10 @@ interface ElementMap {
   "folder-list": HTMLDivElement;
   "line-numbers": HTMLPreElement;
   "model-name": HTMLSpanElement;
-  "new-task": HTMLButtonElement;
   "open-project": HTMLButtonElement;
   "parent-folder": HTMLButtonElement;
   "profile-value": HTMLElement;
   "project-name": HTMLSpanElement;
-  "prompt-history": HTMLSelectElement;
   "refresh-button": HTMLButtonElement;
   "run-button": HTMLButtonElement;
   "ram-value": HTMLElement;
@@ -62,11 +61,15 @@ interface ElementMap {
   "threads-value": HTMLElement;
 }
 
-const state: { activePath: string | null; dirty: boolean; files: FileEntry[]; prompts: string[] } = {
+type ChatRole = "user" | "assistant";
+type MessageStatus = "pending" | "success" | "failure";
+interface ChatTurn { role: ChatRole; text: string }
+
+const state: { activePath: string | null; dirty: boolean; files: FileEntry[]; conversation: ChatTurn[] } = {
   activePath: null,
   dirty: false,
   files: [],
-  prompts: [],
+  conversation: [],
 };
 
 function $<K extends keyof ElementMap>(id: K): ElementMap[K] {
@@ -94,6 +97,8 @@ async function loadProject(): Promise<void> {
   const project = await api<Project>("/api/project");
   $("project-name").textContent = project.name;
   $("project-name").title = project.root;
+  $("chat-project-name").textContent = project.name;
+  $("chat-project-name").title = project.root;
   $("model-name").textContent = project.model;
   $("profile-value").textContent = project.profile;
   $("threads-value").textContent = `${project.threads} threads`;
@@ -127,19 +132,53 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function appendMessage(role: ChatRole, text: string, status?: MessageStatus): HTMLElement {
+  const article = document.createElement("article");
+  article.className = `message ${role}-message${status ? ` ${status}` : ""}`;
+
+  const avatar = document.createElement("div");
+  avatar.className = "message-avatar";
+  avatar.textContent = role === "assistant" ? "M" : "You";
+  avatar.setAttribute("aria-hidden", "true");
+
+  const body = document.createElement("div");
+  body.className = "message-body";
+  const author = document.createElement("strong");
+  author.textContent = role === "assistant" ? "MiteCoder" : "You";
+  const content = document.createElement("p");
+  content.textContent = text;
+  body.append(author, content);
+  article.append(avatar, body);
+  $("chat-messages").append(article);
+  $("chat-messages").scrollTop = $("chat-messages").scrollHeight;
+  return article;
+}
+
+function buildAgentTask(task: string): string {
+  const recent = state.conversation.slice(-4);
+  if (!recent.length) return task;
+  const context = recent
+    .map((turn) => `${turn.role === "user" ? "User" : "Assistant"}: ${turn.text.slice(0, 700)}`)
+    .join("\n");
+  return `Recent conversation about this workspace:\n${context}\n\nCurrent user request:\n${task}`;
+}
+
 async function openProject(): Promise<void> {
   if (state.dirty && !confirm("Discard unsaved changes and open another project?")) return;
   $("folder-dialog").showModal();
   try {
     await browseFolder($("project-name").title);
-  } catch (error) { $("folder-dialog").close(); $("console").innerHTML = `<span class="bad">${escapeText(errorMessage(error))}</span>`; }
+  } catch (error) {
+    $("folder-dialog").close();
+    appendMessage("assistant", errorMessage(error), "failure");
+  }
 }
 
 async function selectFolder(): Promise<void> {
   const path = $("folder-dialog").dataset.path;
   try {
     await api<Project>("/api/project", { method: "POST", body: JSON.stringify({ path }) });
-    state.activePath = null; state.dirty = false; state.files = [];
+    state.activePath = null; state.dirty = false; state.files = []; state.conversation = [];
     $("active-tab").textContent = "No file open";
     $("active-tab").className = "tab empty";
     $("editor-wrap").classList.add("hidden");
@@ -147,31 +186,10 @@ async function selectFolder(): Promise<void> {
     $("save-button").disabled = true;
     await loadProject();
     $("folder-dialog").close();
-    $("console").textContent = `Opened local codebase: ${path}`;
-  } catch (error) { $("console").innerHTML = `<span class="bad">${escapeText(errorMessage(error))}</span>`; }
-}
-
-function rememberPrompt(task: string): void {
-  state.prompts = [task, ...state.prompts.filter((item) => item !== task)].slice(0, 12);
-  localStorage.setItem("mitecoder-prompts", JSON.stringify(state.prompts));
-  renderPromptHistory();
-}
-
-function renderPromptHistory(): void {
-  const options = state.prompts.map((item) => new Option(item.slice(0, 70), item));
-  $("prompt-history").replaceChildren(new Option("Previous prompts", ""), ...options);
-}
-
-function restorePromptHistory(): void {
-  try {
-    const stored = JSON.parse(localStorage.getItem("mitecoder-prompts") ?? "[]") as unknown;
-    if (Array.isArray(stored)) {
-      state.prompts = stored.filter((item): item is string => typeof item === "string").slice(0, 12);
-    }
-  } catch {
-    state.prompts = [];
+    appendMessage("assistant", `Attached local workspace: ${path}`);
+  } catch (error) {
+    appendMessage("assistant", errorMessage(error), "failure");
   }
-  renderPromptHistory();
 }
 
 async function refreshTree(): Promise<void> {
@@ -254,43 +272,52 @@ function insertIndent(event: KeyboardEvent): void {
   editor.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-function printResult(result: AgentResult): void {
+function printResult(result: AgentResult, message: HTMLElement): void {
   const success = result.status === "COMPLETED" && result.verification_passed === true;
   const answered = result.status === "COMPLETED" && result.reason === "answered";
-  $("console").innerHTML = `<span class="${success || answered ? "ok" : "bad"}">${success ? "✓ VERIFIED" : answered ? "ANSWER" : "✕ " + result.status}</span>\n\n` +
-    `<span class="key">Summary</span>  ${escapeText(result.summary)}\n` +
-    `<span class="key">Reason</span>   ${escapeText(result.reason)}\n` +
-    `<span class="key">Steps</span>    ${result.steps}\n` +
-    `<span class="key">Tokens</span>   ${result.input_tokens} in · ${result.output_tokens} out\n` +
-    `<span class="key">Time</span>     ${Number(result.wall_seconds).toFixed(2)}s\n` +
-    `<span class="key">Artifacts</span> ${escapeText(result.artifacts || "none")}`;
+  message.className = `message assistant-message ${success || answered ? "success" : "failure"}`;
+  const body = message.querySelector<HTMLElement>(".message-body");
+  if (body) {
+    const author = document.createElement("strong");
+    author.textContent = success ? "MiteCoder · Verified" : answered ? "MiteCoder · Answer" : `MiteCoder · ${result.status}`;
+    const summary = document.createElement("p");
+    summary.textContent = result.summary;
+    const metrics = document.createElement("div");
+    metrics.className = "run-metrics";
+    metrics.textContent = `${result.steps} steps · ${result.input_tokens} in / ${result.output_tokens} out · ${Number(result.wall_seconds).toFixed(2)}s`;
+    const details = document.createElement("p");
+    details.className = "message-details";
+    details.textContent = `Reason: ${result.reason}${result.artifacts ? ` · Artifacts: ${result.artifacts}` : ""}`;
+    body.replaceChildren(author, summary, metrics, details);
+  }
   $("agent-state").textContent = success ? "Verified" : answered ? "Answered" : "Needs review";
   $("agent-state").className = `agent-state ${success || answered ? "success" : "failure"}`;
-}
-
-function escapeText(value: unknown): string {
-  const entities: Record<string, string> = {
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  };
-  return String(value).replace(/[&<>"']/g, (char) => entities[char] ?? char);
+  $("chat-messages").scrollTop = $("chat-messages").scrollHeight;
 }
 
 async function runAgent(): Promise<void> {
   const task = $("task-input").value.trim();
   if (!task) { $("task-input").focus(); return; }
   if (state.dirty) await saveFile();
-  rememberPrompt(task);
+  const agentTask = buildAgentTask(task);
+  state.conversation.push({ role: "user", text: task });
+  appendMessage("user", task);
+  $("task-input").value = "";
+  updateTaskCount();
   $("run-button").disabled = true;
   $("agent-state").textContent = "Running";
   $("agent-state").className = "agent-state running";
-  $("console").textContent = "Loading the local model and running the agent…";
+  const pending = appendMessage("assistant", "Reading the workspace and running the local agent…", "pending");
   try {
-    const result = await api<AgentResult>("/api/run", { method: "POST", body: JSON.stringify({ task }) });
-    printResult(result);
+    const result = await api<AgentResult>("/api/run", { method: "POST", body: JSON.stringify({ task: agentTask }) });
+    printResult(result, pending);
+    state.conversation.push({ role: "assistant", text: result.summary });
     await refreshTree();
     if (state.activePath) await openFile(state.activePath);
   } catch (error) {
-    $("console").innerHTML = `<span class="bad">${escapeText(errorMessage(error))}</span>`;
+    pending.className = "message assistant-message failure";
+    const content = pending.querySelector("p");
+    if (content) content.textContent = errorMessage(error);
     $("agent-state").textContent = "Failed";
     $("agent-state").className = "agent-state failure";
   } finally { $("run-button").disabled = false; }
@@ -314,6 +341,7 @@ $("save-button").addEventListener("click", saveFile);
 $("refresh-button").addEventListener("click", refreshTree);
 $("file-filter").addEventListener("input", renderTree);
 $("open-project").addEventListener("click", openProject);
+$("chat-attach").addEventListener("click", openProject);
 $("close-folder").addEventListener("click", () => $("folder-dialog").close());
 $("parent-folder").addEventListener("click", () => browseFolder($("parent-folder").dataset.path));
 $("select-folder").addEventListener("click", selectFolder);
@@ -322,8 +350,13 @@ $("agent-toggle").addEventListener("click", () => {
   const open = $("agent-panel").classList.toggle("open");
   $("agent-toggle").setAttribute("aria-expanded", String(open));
 });
-$("new-task").addEventListener("click", () => { $("task-input").value = ""; updateTaskCount(); $("task-input").focus(); });
 $("task-input").addEventListener("input", updateTaskCount);
+$("task-input").addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    runAgent();
+  }
+});
 document.querySelectorAll<HTMLButtonElement>("[data-prompt]").forEach((button) => {
   button.addEventListener("click", () => {
     $("task-input").value = button.dataset.prompt ?? "";
@@ -331,14 +364,6 @@ document.querySelectorAll<HTMLButtonElement>("[data-prompt]").forEach((button) =
     $("task-input").focus();
   });
 });
-$("prompt-history").addEventListener("change", () => {
-  const selected = $("prompt-history").value;
-  if (selected) {
-    $("task-input").value = selected;
-    updateTaskCount();
-  }
-});
-$("clear-console").addEventListener("click", () => { $("console").innerHTML = '<div class="console-placeholder">Agent output will appear here.</div>'; });
 document.addEventListener("keydown", (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); saveFile(); } });
 document.addEventListener("keydown", (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
@@ -349,6 +374,5 @@ document.addEventListener("keydown", (event) => {
 window.addEventListener("beforeunload", (event) => {
   if (state.dirty) event.preventDefault();
 });
-restorePromptHistory();
 updateTaskCount();
-loadProject().catch((error: unknown) => { $("console").textContent = errorMessage(error); });
+loadProject().catch((error: unknown) => { appendMessage("assistant", errorMessage(error), "failure"); });

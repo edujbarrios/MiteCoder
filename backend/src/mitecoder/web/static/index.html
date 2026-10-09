@@ -40,28 +40,40 @@
     </section>
 
     <aside id="agent-panel" class="agent panel">
-      <div class="agent-heading">
-        <div><span class="eyebrow">CODING AGENT</span><h2>Ship a verified change</h2></div>
+      <div class="chat-header">
+        <div><span class="eyebrow">LOCAL CODING AGENT</span><h2>Workspace chat</h2></div>
         <span id="agent-state" class="agent-state idle">Ready</span>
       </div>
-      <div class="resource-strip" aria-label="Active resource budget">
-        <span><small>PROFILE</small><strong id="profile-value">—</strong></span>
-        <span><small>CPU</small><strong id="threads-value">—</strong></span>
-        <span><small>RAM LIMIT</small><strong id="ram-value">—</strong></span>
-        <span><small>CONTEXT</small><strong id="context-value">—</strong></span>
+      <div class="workspace-context">
+        <div class="context-title"><span class="status-dot"></span><span id="chat-project-name">Workspace</span></div>
+        <button id="chat-attach" class="attach-button" title="Attach another local folder">＋ Attach folder</button>
+        <div class="resource-strip" aria-label="Active resource budget">
+          <span><small>PROFILE</small><strong id="profile-value">—</strong></span>
+          <span><small>CPU</small><strong id="threads-value">—</strong></span>
+          <span><small>RAM</small><strong id="ram-value">—</strong></span>
+          <span><small>CONTEXT</small><strong id="context-value">—</strong></span>
+        </div>
+        <div id="commands" class="commands"></div>
       </div>
-      <textarea id="task-input" class="task-input" placeholder="Fix the failing tests and explain the change…" maxlength="4000"></textarea>
-      <div class="task-meta"><p class="agent-intro">Keep tasks focused. Every configured check must pass.</p><span id="task-count">0 / 4000</span></div>
-      <div class="quick-prompts" aria-label="Suggested tasks">
-        <button data-prompt="Explain the architecture of this codebase.">Explain architecture</button>
-        <button data-prompt="Find a small bug, fix it, and verify the change.">Find and fix a bug</button>
-        <button data-prompt="Review the open file and suggest improvements without editing it.">Review current file</button>
+      <div id="chat-messages" class="chat-messages" role="log" aria-live="polite">
+        <article class="message assistant-message">
+          <div class="message-avatar">M</div>
+          <div class="message-body"><strong>MiteCoder</strong><p>Folder attached. Ask me to explain the code, inspect a file, or make a small verified change.</p></div>
+        </article>
+        <div class="quick-prompts" aria-label="Suggested tasks">
+          <button data-prompt="Explain the architecture of this codebase.">Explain this codebase</button>
+          <button data-prompt="Find a small bug, fix it, and verify the change.">Find and fix a bug</button>
+          <button data-prompt="Review the currently open file without changing it.">Review open file</button>
+        </div>
       </div>
-      <div class="prompt-tools"><select id="prompt-history" aria-label="Previous prompts"><option value="">Previous prompts</option></select><button id="new-task" class="ghost">New</button></div>
-      <div class="run-row"><span class="hint">Qwen runs on this CPU</span><button id="run-button" class="primary">Run agent</button></div>
-      <div id="commands" class="commands"></div>
-      <div class="console-heading"><span>RUN OUTPUT</span><button id="clear-console">Clear</button></div>
-      <div id="console" class="console" role="log" aria-live="polite"><div class="console-placeholder">Agent output will appear here.</div></div>
+      <div class="chat-composer">
+        <textarea id="task-input" class="task-input" placeholder="Message MiteCoder about this folder…" maxlength="4000" rows="3"></textarea>
+        <div class="composer-footer">
+          <span id="task-count">0 / 4000</span>
+          <span class="composer-hint">Enter to send · Shift Enter for newline</span>
+          <button id="run-button" class="send-button" aria-label="Send message">↑</button>
+        </div>
+      </div>
     </aside>
   </main>
   <dialog id="folder-dialog" class="folder-dialog">

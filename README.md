@@ -71,9 +71,10 @@ mitecoder web --workspace ./examples/simple_bug \
   --model-path models/qwen2.5-coder-0.5b-instruct-q4_k_m.gguf
 ```
 
-Open [http://127.0.0.1:8765](http://127.0.0.1:8765). The interface provides a folder picker, file
-search, editor, task panel, run output, and verification status. It binds only to localhost and
-loads no third-party web assets.
+Open [http://127.0.0.1:8765](http://127.0.0.1:8765). Attach a local code folder, talk to the agent
+in a familiar chat, and inspect or edit its changes in the file editor beside the conversation.
+Follow-up messages keep a small amount of recent context to remain useful with limited-context
+SLMs. The server binds only to localhost and loads no third-party web assets.
 
 ## Why it can work with a small model
 
