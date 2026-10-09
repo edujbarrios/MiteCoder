@@ -39,6 +39,7 @@ kbd { margin-left: 5px; padding: 2px 5px; border: 1px solid #343a47; border-radi
 .explorer { border-right: 1px solid var(--line); display: flex; flex-direction: column; }
 .panel-heading, .console-heading { height: 42px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: #9ca3b2; font-size: 12px; font-weight: 650; letter-spacing: .08em; }
 .panel-heading button { font-size: 20px; }
+.panel-heading small { margin-left: 5px; color: #626b7e; font-size: 10px; font-weight: 500; }
 .file-tree { flex: 1; overflow: auto; padding: 5px 7px 16px; }
 .file-search { display: flex; align-items: center; gap: 7px; margin: 0 8px 7px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: #0b0e14; color: #60697b; }
 .file-search:focus-within { border-color: #5f4ac5; }
@@ -56,8 +57,8 @@ kbd { margin-left: 5px; padding: 2px 5px; border: 1px solid #343a47; border-radi
 .tab { min-width: 145px; max-width: 240px; padding: 11px 14px; border-right: 1px solid var(--line); color: #d1d5df; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; position: relative; }
 .tab:not(.empty)::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--violet); }
 .tab.empty { color: #687083; }
-.empty-state { display: grid; align-content: center; justify-items: center; text-align: center; color: var(--muted); padding: 30px; }
-.empty-mark { font-size: 52px; font-weight: 800; color: #292e3a; }
+.empty-state { display: grid; align-content: center; justify-items: center; text-align: center; color: var(--muted); padding: 30px; background: radial-gradient(circle at 50% 43%, #7c5cff0d, transparent 32%); }
+.empty-mark { width: 74px; height: 74px; display: grid; place-items: center; border: 1px solid #292f3d; border-radius: 20px; background: linear-gradient(145deg, #171b25, #0e1118); font-size: 38px; font-weight: 800; color: #6f5bd2; box-shadow: 0 20px 60px #0006; }
 .empty-state h1 { margin: 12px 0 5px; color: #bfc4cf; font-size: 18px; }
 .empty-state p { max-width: 390px; margin: 0; line-height: 1.5; }
 .shortcut-grid { display: flex; gap: 18px; margin-top: 24px; color: #697184; font-size: 12px; }
@@ -75,12 +76,22 @@ kbd { margin-left: 5px; padding: 2px 5px; border: 1px solid #343a47; border-radi
 .eyebrow { color: var(--violet-2); font-size: 11px; font-weight: 700; letter-spacing: .12em; }
 .agent h2 { margin: 6px 0 14px; font-size: 17px; }
 .agent-intro { margin: -4px 0 13px; color: #777f91; font-size: 12px; line-height: 1.5; }
+.resource-strip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; margin: 0 0 12px; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--line); }
+.resource-strip span { min-width: 0; display: grid; gap: 3px; padding: 8px 9px; background: #11151e; }
+.resource-strip small { color: #60697b; font-size: 8px; font-weight: 700; letter-spacing: .1em; }
+.resource-strip strong { overflow: hidden; color: #c9ced8; font: 11px var(--mono); text-overflow: ellipsis; white-space: nowrap; }
 .agent-state { padding: 5px 8px; border-radius: 99px; font-size: 11px; border: 1px solid var(--line); color: #949cad; }
 .agent-state.running { color: #cabfff; border-color: #6e57cc; background: #7c5cff14; }
 .agent-state.success { color: var(--green); border-color: #2f754c; }
 .agent-state.failure { color: var(--red); border-color: #743642; }
 .task-input { width: 100%; min-height: 116px; resize: vertical; border: 1px solid #2a3040; border-radius: 9px; padding: 12px; outline: none; background: #11151e; color: var(--text); line-height: 1.5; }
 .task-input:focus { border-color: var(--violet); box-shadow: 0 0 0 3px #7c5cff16; }
+.task-meta { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.task-meta .agent-intro { flex: 1; }
+#task-count { color: #596173; font: 10px var(--mono); white-space: nowrap; }
+.quick-prompts { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 2px; }
+.quick-prompts button { border: 1px solid #292f3c; border-radius: 99px; padding: 5px 8px; background: #11151e; color: #7e8799; font-size: 10px; }
+.quick-prompts button:hover { border-color: #5847a8; color: #c4baff; }
 .run-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 18px; border-bottom: 1px solid var(--line); }
 .prompt-tools { display: flex; gap: 7px; padding-top: 8px; }
 .prompt-tools select { min-width: 0; flex: 1; border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: #11151e; color: #8d95a6; }

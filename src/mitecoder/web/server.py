@@ -34,6 +34,10 @@ class WebApplication:
             "root": str(self.workspace.root),
             "model": self.model_path.name,
             "commands": list(config.testing.commands),
+            "profile": config.profile,
+            "threads": config.inference.threads,
+            "context_length": config.inference.context_length,
+            "max_ram_mb": config.runtime.max_ram_mb,
         }
 
     def open_repository(self, repository: str) -> dict[str, Any]:

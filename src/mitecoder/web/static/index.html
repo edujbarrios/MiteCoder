@@ -17,7 +17,7 @@
 
   <main class="workspace">
     <aside class="explorer panel">
-      <div class="panel-heading"><span>EXPLORER</span><button id="refresh-button" title="Refresh files">↻</button></div>
+      <div class="panel-heading"><span>EXPLORER <small id="file-count">0</small></span><button id="refresh-button" title="Refresh files" aria-label="Refresh files">↻</button></div>
       <label class="file-search"><span aria-hidden="true">⌕</span><input id="file-filter" type="search" placeholder="Filter files" aria-label="Filter files"></label>
       <div id="file-tree" class="file-tree" role="tree"></div>
       <div class="local-note"><span>●</span> Offline workspace</div>
@@ -44,8 +44,19 @@
         <div><span class="eyebrow">CODING AGENT</span><h2>Ship a verified change</h2></div>
         <span id="agent-state" class="agent-state idle">Ready</span>
       </div>
+      <div class="resource-strip" aria-label="Active resource budget">
+        <span><small>PROFILE</small><strong id="profile-value">—</strong></span>
+        <span><small>CPU</small><strong id="threads-value">—</strong></span>
+        <span><small>RAM LIMIT</small><strong id="ram-value">—</strong></span>
+        <span><small>CONTEXT</small><strong id="context-value">—</strong></span>
+      </div>
       <textarea id="task-input" class="task-input" placeholder="Fix the failing tests and explain the change…" maxlength="4000"></textarea>
-      <p class="agent-intro">Keep tasks focused. Success requires every configured check to pass.</p>
+      <div class="task-meta"><p class="agent-intro">Keep tasks focused. Every configured check must pass.</p><span id="task-count">0 / 4000</span></div>
+      <div class="quick-prompts" aria-label="Suggested tasks">
+        <button data-prompt="Explain the architecture of this codebase.">Explain architecture</button>
+        <button data-prompt="Find a small bug, fix it, and verify the change.">Find and fix a bug</button>
+        <button data-prompt="Review the open file and suggest improvements without editing it.">Review current file</button>
+      </div>
       <div class="prompt-tools"><select id="prompt-history" aria-label="Previous prompts"><option value="">Previous prompts</option></select><button id="new-task" class="ghost">New</button></div>
       <div class="run-row"><span class="hint">Qwen runs on this CPU</span><button id="run-button" class="primary">Run agent</button></div>
       <div id="commands" class="commands"></div>

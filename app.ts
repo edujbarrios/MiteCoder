@@ -1,6 +1,15 @@
 interface FileEntry { path: string; size: number }
 interface FolderEntry { name: string; path: string }
-interface Project { name: string; root: string; model: string; commands: string[] }
+interface Project {
+  name: string;
+  root: string;
+  model: string;
+  commands: string[];
+  profile: string;
+  threads: number;
+  context_length: number;
+  max_ram_mb: number;
+}
 interface DirectoryListing { path: string; parent: string | null; folders: FolderEntry[] }
 interface AgentResult {
   status: string;
@@ -22,6 +31,7 @@ interface ElementMap {
   "clear-console": HTMLButtonElement;
   commands: HTMLDivElement;
   console: HTMLDivElement;
+  "context-value": HTMLElement;
   "close-folder": HTMLButtonElement;
   "current-folder": HTMLSpanElement;
   "cursor-position": HTMLSpanElement;
@@ -30,6 +40,7 @@ interface ElementMap {
   "editor-wrap": HTMLDivElement;
   "empty-editor": HTMLDivElement;
   "file-filter": HTMLInputElement;
+  "file-count": HTMLElement;
   "file-tree": HTMLDivElement;
   "folder-dialog": HTMLDialogElement;
   "folder-list": HTMLDivElement;
@@ -38,13 +49,17 @@ interface ElementMap {
   "new-task": HTMLButtonElement;
   "open-project": HTMLButtonElement;
   "parent-folder": HTMLButtonElement;
+  "profile-value": HTMLElement;
   "project-name": HTMLSpanElement;
   "prompt-history": HTMLSelectElement;
   "refresh-button": HTMLButtonElement;
   "run-button": HTMLButtonElement;
+  "ram-value": HTMLElement;
   "save-button": HTMLButtonElement;
   "select-folder": HTMLButtonElement;
   "task-input": HTMLTextAreaElement;
+  "task-count": HTMLElement;
+  "threads-value": HTMLElement;
 }
 
 const state: { activePath: string | null; dirty: boolean; files: FileEntry[]; prompts: string[] } = {
@@ -80,6 +95,10 @@ async function loadProject(): Promise<void> {
   $("project-name").textContent = project.name;
   $("project-name").title = project.root;
   $("model-name").textContent = project.model;
+  $("profile-value").textContent = project.profile;
+  $("threads-value").textContent = `${project.threads} threads`;
+  $("ram-value").textContent = `${project.max_ram_mb} MB`;
+  $("context-value").textContent = `${project.context_length} tokens`;
   $("commands").textContent = project.commands.length ? `Allowed checks: ${project.commands.join(" · ")}` : "No test commands configured";
   await refreshTree();
 }
@@ -134,13 +153,31 @@ async function selectFolder(): Promise<void> {
 
 function rememberPrompt(task: string): void {
   state.prompts = [task, ...state.prompts.filter((item) => item !== task)].slice(0, 12);
+  localStorage.setItem("mitecoder-prompts", JSON.stringify(state.prompts));
+  renderPromptHistory();
+}
+
+function renderPromptHistory(): void {
   const options = state.prompts.map((item) => new Option(item.slice(0, 70), item));
   $("prompt-history").replaceChildren(new Option("Previous prompts", ""), ...options);
+}
+
+function restorePromptHistory(): void {
+  try {
+    const stored = JSON.parse(localStorage.getItem("mitecoder-prompts") ?? "[]") as unknown;
+    if (Array.isArray(stored)) {
+      state.prompts = stored.filter((item): item is string => typeof item === "string").slice(0, 12);
+    }
+  } catch {
+    state.prompts = [];
+  }
+  renderPromptHistory();
 }
 
 async function refreshTree(): Promise<void> {
   const data = await api<{ files: FileEntry[] }>("/api/tree");
   state.files = data.files;
+  $("file-count").textContent = String(state.files.length);
   renderTree();
 }
 
@@ -202,6 +239,21 @@ function updateCursor(): void {
   $("cursor-position").textContent = `Ln ${before.length}, Col ${(before.at(-1) ?? "").length + 1}`;
 }
 
+function updateTaskCount(): void {
+  const input = $("task-input");
+  $("task-count").textContent = `${input.value.length} / ${input.maxLength}`;
+}
+
+function insertIndent(event: KeyboardEvent): void {
+  if (event.key !== "Tab") return;
+  event.preventDefault();
+  const editor = $("editor");
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  editor.setRangeText("    ", start, end, "end");
+  editor.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 function printResult(result: AgentResult): void {
   const success = result.status === "COMPLETED" && result.verification_passed === true;
   const answered = result.status === "COMPLETED" && result.reason === "answered";
@@ -257,6 +309,7 @@ $("editor").addEventListener("input", () => {
 });
 $("editor").addEventListener("keyup", updateCursor);
 $("editor").addEventListener("click", updateCursor);
+$("editor").addEventListener("keydown", insertIndent);
 $("save-button").addEventListener("click", saveFile);
 $("refresh-button").addEventListener("click", refreshTree);
 $("file-filter").addEventListener("input", renderTree);
@@ -269,10 +322,21 @@ $("agent-toggle").addEventListener("click", () => {
   const open = $("agent-panel").classList.toggle("open");
   $("agent-toggle").setAttribute("aria-expanded", String(open));
 });
-$("new-task").addEventListener("click", () => { $("task-input").value = ""; $("task-input").focus(); });
+$("new-task").addEventListener("click", () => { $("task-input").value = ""; updateTaskCount(); $("task-input").focus(); });
+$("task-input").addEventListener("input", updateTaskCount);
+document.querySelectorAll<HTMLButtonElement>("[data-prompt]").forEach((button) => {
+  button.addEventListener("click", () => {
+    $("task-input").value = button.dataset.prompt ?? "";
+    updateTaskCount();
+    $("task-input").focus();
+  });
+});
 $("prompt-history").addEventListener("change", () => {
   const selected = $("prompt-history").value;
-  if (selected) $("task-input").value = selected;
+  if (selected) {
+    $("task-input").value = selected;
+    updateTaskCount();
+  }
 });
 $("clear-console").addEventListener("click", () => { $("console").innerHTML = '<div class="console-placeholder">Agent output will appear here.</div>'; });
 document.addEventListener("keydown", (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") { event.preventDefault(); saveFile(); } });
@@ -285,4 +349,6 @@ document.addEventListener("keydown", (event) => {
 window.addEventListener("beforeunload", (event) => {
   if (state.dirty) event.preventDefault();
 });
+restorePromptHistory();
+updateTaskCount();
 loadProject().catch((error: unknown) => { $("console").textContent = errorMessage(error); });

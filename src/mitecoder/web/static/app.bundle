@@ -30,6 +30,10 @@ async function loadProject() {
     $("project-name").textContent = project.name;
     $("project-name").title = project.root;
     $("model-name").textContent = project.model;
+    $("profile-value").textContent = project.profile;
+    $("threads-value").textContent = `${project.threads} threads`;
+    $("ram-value").textContent = `${project.max_ram_mb} MB`;
+    $("context-value").textContent = `${project.context_length} tokens`;
     $("commands").textContent = project.commands.length ? `Allowed checks: ${project.commands.join(" · ")}` : "No test commands configured";
     await refreshTree();
 }
@@ -90,12 +94,29 @@ async function selectFolder() {
 }
 function rememberPrompt(task) {
     state.prompts = [task, ...state.prompts.filter((item) => item !== task)].slice(0, 12);
+    localStorage.setItem("mitecoder-prompts", JSON.stringify(state.prompts));
+    renderPromptHistory();
+}
+function renderPromptHistory() {
     const options = state.prompts.map((item) => new Option(item.slice(0, 70), item));
     $("prompt-history").replaceChildren(new Option("Previous prompts", ""), ...options);
+}
+function restorePromptHistory() {
+    try {
+        const stored = JSON.parse(localStorage.getItem("mitecoder-prompts") ?? "[]");
+        if (Array.isArray(stored)) {
+            state.prompts = stored.filter((item) => typeof item === "string").slice(0, 12);
+        }
+    }
+    catch {
+        state.prompts = [];
+    }
+    renderPromptHistory();
 }
 async function refreshTree() {
     const data = await api("/api/tree");
     state.files = data.files;
+    $("file-count").textContent = String(state.files.length);
     renderTree();
 }
 function renderTree() {
@@ -155,6 +176,20 @@ function updateCursor() {
     const editor = $("editor");
     const before = editor.value.slice(0, editor.selectionStart).split("\n");
     $("cursor-position").textContent = `Ln ${before.length}, Col ${(before.at(-1) ?? "").length + 1}`;
+}
+function updateTaskCount() {
+    const input = $("task-input");
+    $("task-count").textContent = `${input.value.length} / ${input.maxLength}`;
+}
+function insertIndent(event) {
+    if (event.key !== "Tab")
+        return;
+    event.preventDefault();
+    const editor = $("editor");
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.setRangeText("    ", start, end, "end");
+    editor.dispatchEvent(new Event("input", { bubbles: true }));
 }
 function printResult(result) {
     const success = result.status === "COMPLETED" && result.verification_passed === true;
@@ -217,6 +252,7 @@ $("editor").addEventListener("input", () => {
 });
 $("editor").addEventListener("keyup", updateCursor);
 $("editor").addEventListener("click", updateCursor);
+$("editor").addEventListener("keydown", insertIndent);
 $("save-button").addEventListener("click", saveFile);
 $("refresh-button").addEventListener("click", refreshTree);
 $("file-filter").addEventListener("input", renderTree);
@@ -229,11 +265,21 @@ $("agent-toggle").addEventListener("click", () => {
     const open = $("agent-panel").classList.toggle("open");
     $("agent-toggle").setAttribute("aria-expanded", String(open));
 });
-$("new-task").addEventListener("click", () => { $("task-input").value = ""; $("task-input").focus(); });
+$("new-task").addEventListener("click", () => { $("task-input").value = ""; updateTaskCount(); $("task-input").focus(); });
+$("task-input").addEventListener("input", updateTaskCount);
+document.querySelectorAll("[data-prompt]").forEach((button) => {
+    button.addEventListener("click", () => {
+        $("task-input").value = button.dataset.prompt ?? "";
+        updateTaskCount();
+        $("task-input").focus();
+    });
+});
 $("prompt-history").addEventListener("change", () => {
     const selected = $("prompt-history").value;
-    if (selected)
+    if (selected) {
         $("task-input").value = selected;
+        updateTaskCount();
+    }
 });
 $("clear-console").addEventListener("click", () => { $("console").innerHTML = '<div class="console-placeholder">Agent output will appear here.</div>'; });
 document.addEventListener("keydown", (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s") {
@@ -250,4 +296,6 @@ window.addEventListener("beforeunload", (event) => {
     if (state.dirty)
         event.preventDefault();
 });
+restorePromptHistory();
+updateTaskCount();
 loadProject().catch((error) => { $("console").textContent = errorMessage(error); });
