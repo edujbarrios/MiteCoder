@@ -8,5 +8,5 @@
     "noUncheckedIndexedAccess": true,
     "removeComments": true
   },
-  "files": ["app.ts"]
+  "files": ["frontend/src/app.ts"]
 }

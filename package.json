@@ -2,7 +2,7 @@
   "name": "mitecoder-web",
   "private": true,
   "scripts": {
-    "build": "tsc --project tsconfig.json",
+    "build": "tsc --project tsconfig.json && python scripts/build_frontend.py",
     "check": "tsc --project tsconfig.json --noEmit"
   },
   "devDependencies": {
