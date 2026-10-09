@@ -22,7 +22,7 @@ jobs:
       - run: npm run check
       - run: npm run build
       - name: Check generated browser bundle
-        run: git diff --exit-code -- src/mitecoder/web/static/app.bundle
+        run: git diff --exit-code -- src/mitecoder/web/static
 
   test:
     strategy:

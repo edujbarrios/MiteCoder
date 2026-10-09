@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0d12">
+  <title>MiteCoder — Local coding workspace</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2311131a'/%3E%3Cpath d='M9 23V9l7 8 7-8v14' fill='none' stroke='%237c5cff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">M</span><span class="brand-copy"><strong>MiteCoder</strong><small>LOCAL AGENT</small></span></div>
+    <div class="project"><span class="status-dot"></span><button id="open-project" class="project-button" title="Open another local codebase"><span id="project-name">Loading project…</span><span>⌄</span></button></div>
+    <div class="top-actions"><span id="model-name" class="model-chip">Local model</span><button id="agent-toggle" class="ghost mobile-only" aria-controls="agent-panel" aria-expanded="false">Agent</button><button id="save-button" class="ghost" disabled>Save <kbd>Ctrl S</kbd></button></div>
+  </header>
+
+  <main class="workspace">
+    <aside class="explorer panel">
+      <div class="panel-heading"><span>EXPLORER <small id="file-count">0</small></span><button id="refresh-button" title="Refresh files" aria-label="Refresh files">↻</button></div>
+      <label class="file-search"><span aria-hidden="true">⌕</span><input id="file-filter" type="search" placeholder="Filter files" aria-label="Filter files"></label>
+      <div id="file-tree" class="file-tree" role="tree"></div>
+      <div class="local-note"><span>●</span> Offline workspace</div>
+    </aside>
+
+    <section class="editor-shell panel">
+      <div class="tabs"><div id="active-tab" class="tab empty">No file open</div></div>
+      <div id="empty-editor" class="empty-state">
+        <div class="empty-mark">M</div>
+        <span class="eyebrow">PRIVATE BY DESIGN</span>
+        <h1>Your code stays on this machine</h1>
+        <p>Open a file from the explorer or describe a small, testable change to the local agent.</p>
+        <div class="shortcut-grid"><span><kbd>Ctrl S</kbd> Save file</span><span><kbd>Ctrl Enter</kbd> Run agent</span></div>
+      </div>
+      <div id="editor-wrap" class="editor-wrap hidden">
+        <pre id="line-numbers" aria-hidden="true">1</pre>
+        <textarea id="editor" spellcheck="false" aria-label="Code editor"></textarea>
+      </div>
+      <footer class="statusbar"><span id="dirty-state">Saved</span><span id="cursor-position">Ln 1, Col 1</span><span>UTF-8</span><span>Spaces: 4</span><span class="local-status">● Local only</span></footer>
+    </section>
+
+    <aside id="agent-panel" class="agent panel">
+      <div class="agent-heading">
+        <div><span class="eyebrow">CODING AGENT</span><h2>Ship a verified change</h2></div>
+        <span id="agent-state" class="agent-state idle">Ready</span>
+      </div>
+      <div class="resource-strip" aria-label="Active resource budget">
+        <span><small>PROFILE</small><strong id="profile-value">—</strong></span>
+        <span><small>CPU</small><strong id="threads-value">—</strong></span>
+        <span><small>RAM LIMIT</small><strong id="ram-value">—</strong></span>
+        <span><small>CONTEXT</small><strong id="context-value">—</strong></span>
+      </div>
+      <textarea id="task-input" class="task-input" placeholder="Fix the failing tests and explain the change…" maxlength="4000"></textarea>
+      <div class="task-meta"><p class="agent-intro">Keep tasks focused. Every configured check must pass.</p><span id="task-count">0 / 4000</span></div>
+      <div class="quick-prompts" aria-label="Suggested tasks">
+        <button data-prompt="Explain the architecture of this codebase.">Explain architecture</button>
+        <button data-prompt="Find a small bug, fix it, and verify the change.">Find and fix a bug</button>
+        <button data-prompt="Review the open file and suggest improvements without editing it.">Review current file</button>
+      </div>
+      <div class="prompt-tools"><select id="prompt-history" aria-label="Previous prompts"><option value="">Previous prompts</option></select><button id="new-task" class="ghost">New</button></div>
+      <div class="run-row"><span class="hint">Qwen runs on this CPU</span><button id="run-button" class="primary">Run agent</button></div>
+      <div id="commands" class="commands"></div>
+      <div class="console-heading"><span>RUN OUTPUT</span><button id="clear-console">Clear</button></div>
+      <div id="console" class="console" role="log" aria-live="polite"><div class="console-placeholder">Agent output will appear here.</div></div>
+    </aside>
+  </main>
+  <dialog id="folder-dialog" class="folder-dialog">
+    <div class="folder-header"><div><span class="eyebrow">LOCAL WORKSPACE</span><h2>Open a folder</h2></div><button id="close-folder" class="icon-button" aria-label="Close">×</button></div>
+    <div class="folder-path"><button id="parent-folder" class="icon-button" title="Parent folder">↑</button><span id="current-folder"></span></div>
+    <div id="folder-list" class="folder-list"></div>
+    <div class="folder-actions"><span>Only folders are shown</span><button id="select-folder" class="primary">Open this folder</button></div>
+  </dialog>
+  <script src="/app.bundle" defer></script>
+</body>
+</html>

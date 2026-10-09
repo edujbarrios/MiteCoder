@@ -117,8 +117,8 @@ npm run build
 mitecoder benchmark --suite microswe --config configs/ultra_low.yaml
 ```
 
-The browser interface is authored in strictly typed TypeScript. `npm run build` compiles `app.ts`
-into the generated browser bundle shipped with the Python package.
+The browser interface lives in `frontend/` and is authored in strictly typed TypeScript.
+`npm run build` compiles and copies its generated runtime assets into the Python package.
 
 MicroSWE is a small original offline benchmark for resource-constrained coding agents. It is not
 SWE-bench. Without `--model-path`, the command runs a deterministic framework smoke test.
