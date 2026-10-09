@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from mitecoder.repository.workspace import Workspace
+from mitecoder.subprocess_utils import combined_output, run_text
 from mitecoder.tools.base import Tool, ToolResult
 
 HEADER = re.compile(r"^(?:---|\+\+\+)\s+(?:[ab]/)?([^\t\n]+)", re.MULTILINE)
@@ -51,35 +52,32 @@ class ApplyPatchTool(Tool):
             ) as handle:
                 handle.write(patch)
                 temp_path = Path(handle.name)
-            check = subprocess.run(
+            check = run_text(
                 ["git", "apply", "--check", "--", str(temp_path)],
                 cwd=self.workspace.root,
                 capture_output=True,
-                text=True,
                 timeout=10,
                 check=False,
             )
             if check.returncode:
-                return ToolResult(False, (check.stdout + check.stderr).strip())
-            applied = subprocess.run(
+                return ToolResult(False, combined_output(check).strip())
+            applied = run_text(
                 ["git", "apply", "--", str(temp_path)],
                 cwd=self.workspace.root,
                 capture_output=True,
-                text=True,
                 timeout=10,
                 check=False,
             )
             if applied.returncode:
-                return ToolResult(False, (applied.stdout + applied.stderr).strip())
-            diff = subprocess.run(
+                return ToolResult(False, combined_output(applied).strip())
+            diff = run_text(
                 ["git", "diff", "--no-ext-diff"],
                 cwd=self.workspace.root,
                 capture_output=True,
-                text=True,
                 timeout=10,
                 check=False,
             )
-            return ToolResult(True, diff.stdout[-50_000:], sorted(set(paths)))
+            return ToolResult(True, combined_output(diff)[-50_000:], sorted(set(paths)))
         finally:
             if temp_path:
                 temp_path.unlink(missing_ok=True)

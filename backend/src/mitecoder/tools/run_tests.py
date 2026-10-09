@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from mitecoder.repository.workspace import Workspace
+from mitecoder.subprocess_utils import combined_output, run_text
 from mitecoder.tools.base import Tool, ToolResult
 
 
@@ -56,11 +57,10 @@ class RunTestsTool(Tool):
             with tempfile.TemporaryDirectory(prefix="mitecoder-pycache-") as pycache:
                 environment = os.environ.copy()
                 environment["PYTHONPYCACHEPREFIX"] = pycache
-                completed = subprocess.run(
+                completed = run_text(
                     command,
                     cwd=self.workspace.root,
                     capture_output=True,
-                    text=True,
                     timeout=self.timeout,
                     check=False,
                     shell=False,
@@ -68,7 +68,7 @@ class RunTestsTool(Tool):
                 )
         except (OSError, subprocess.TimeoutExpired) as exc:
             return ToolResult(False, f"test execution failed: {exc}")
-        output = (completed.stdout + completed.stderr)[-20_000:]
+        output = combined_output(completed)[-20_000:]
         return ToolResult(
             completed.returncode == 0,
             output,

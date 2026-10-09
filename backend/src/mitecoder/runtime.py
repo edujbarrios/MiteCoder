@@ -14,6 +14,7 @@ from mitecoder.config.fingerprint import run_fingerprint
 from mitecoder.config.schema import Config
 from mitecoder.metrics.collector import MetricsCollector, peak_rss_mb
 from mitecoder.repository.workspace import Workspace
+from mitecoder.subprocess_utils import run_text
 from mitecoder.retrieval.context_builder import ContextBuilder
 from mitecoder.retrieval.factory import create_retriever
 from mitecoder.tools.apply_patch import ApplyPatchTool
@@ -26,15 +27,19 @@ from mitecoder.tools.write_file import WriteFileTool
 
 
 def git_commit(root: Path) -> str:
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        timeout=5,
-        check=False,
-    )
-    return result.stdout.strip() if result.returncode == 0 else "uncommitted"
+    try:
+        result = run_text(
+            ["git", "rev-parse", "HEAD"],
+            cwd=root,
+            capture_output=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return "uncommitted"
+    if result.returncode:
+        return "uncommitted"
+    return (result.stdout or "").strip() or "uncommitted"
 
 
 def build_tools(workspace: Workspace, config: Config) -> ToolRegistry:
