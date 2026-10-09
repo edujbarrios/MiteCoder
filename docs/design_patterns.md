@@ -9,3 +9,5 @@
 | Audit available actions | Registry: `tools/registry.py` | Names and schemas are enumerable and unknown actions fail closed | Dynamic imports make capability review harder |
 | Make termination and progress testable | State: `agent/state.py`, `agent/loop.py` | Every transition emits an event | An implicit monolithic loop hides failure stages |
 | Isolate experiments and tests | Dependency injection: `Agent.__init__` | Fake model, tools, retrieval, clock-facing budget, and metrics can be supplied | Global singletons create cross-run state |
+| Keep repository layers independent | Ports and adapters: `backend/`, `cli/`, `frontend/` | User interfaces depend on the application core, never the reverse | Mixing delivery code into the agent makes testing and packaging fragile |
+| Prevent architectural drift | Fitness functions: `tests/test_architecture_boundaries.py` | CI checks dependency direction and generated/source boundaries | Documentation alone becomes stale during refactors |

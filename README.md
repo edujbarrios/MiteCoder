@@ -120,6 +120,18 @@ mitecoder benchmark --suite microswe --config configs/ultra_low.yaml
 The browser interface lives in `frontend/` and is authored in strictly typed TypeScript.
 `npm run build` compiles and copies its generated runtime assets into the Python package.
 
+### Repository layout
+
+- `backend/` — agent loop, inference, retrieval, tools, configuration, metrics, and local web API.
+- `cli/` — thin command-line adapter and console entry point.
+- `frontend/` — TypeScript and browser asset sources.
+- `tests/` — behavior, security, packaging, and architecture checks.
+- `benchmarks/` — the offline MicroSWE evaluation suite.
+
+Dependencies point inward: the CLI and frontend use the backend. A minimal `__main__` compatibility
+shim is the only backend-to-CLI reference, preserving `python -m mitecoder`. Generated frontend
+assets are packaged under `backend/src/mitecoder/web/static/`.
+
 MicroSWE is a small original offline benchmark for resource-constrained coding agents. It is not
 SWE-bench. Without `--model-path`, the command runs a deterministic framework smoke test.
 
