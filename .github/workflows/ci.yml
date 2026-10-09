@@ -22,7 +22,7 @@ jobs:
       - run: npm run check
       - run: npm run build
       - name: Check generated browser bundle
-        run: git diff --exit-code -- src/mitecoder/web/static
+        run: git diff --exit-code -- backend/src/mitecoder/web/static
 
   test:
     strategy:
@@ -42,7 +42,7 @@ jobs:
       - name: Test
         run: python -m pytest
       - name: Lint maintained code
-        run: python -m ruff check src tests
+        run: python -m ruff check backend/src cli/src tests scripts
 
   package:
     runs-on: ubuntu-latest

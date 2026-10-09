@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = ROOT / "frontend" / "public"
-STATIC = ROOT / "src" / "mitecoder" / "web" / "static"
+STATIC = ROOT / "backend" / "src" / "mitecoder" / "web" / "static"
 
 
 def main() -> None:

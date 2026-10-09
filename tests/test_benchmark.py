@@ -3,10 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from mitecoder.benchmark import load_tasks, run_benchmark
-from mitecoder.cli import _smoke_backend
 from mitecoder.config.schema import Config
+from mitecoder_cli.cli import _smoke_backend
 
 SUITE = Path(__file__).parents[1] / "benchmarks" / "microswe"
 

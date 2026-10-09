@@ -11,8 +11,12 @@ from typing import BinaryIO
 from urllib.request import Request, urlopen
 
 import yaml
-
 from mitecoder.exceptions import ModelVerificationError
+
+
+def packaged_manifest_path() -> Path:
+    """Return the model manifest distributed with the backend package."""
+    return Path(__file__).resolve().parents[1] / "data" / "models.yaml"
 
 
 @dataclass(frozen=True)

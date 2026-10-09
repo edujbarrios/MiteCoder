@@ -28,7 +28,7 @@ llama = ["llama-cpp-python>=0.3.0"]
 dev = ["build>=1.2", "pytest>=8.0", "ruff>=0.6"]
 
 [project.scripts]
-mitecoder = "mitecoder.cli:main"
+mitecoder = "mitecoder_cli.cli:main"
 
 [project.urls]
 Repository = "https://github.com/edujbarrios/MiteCoder"
@@ -37,12 +37,12 @@ Changelog = "https://github.com/edujbarrios/MiteCoder/blob/main/CHANGELOG.md"
 Documentation = "https://github.com/edujbarrios/MiteCoder#readme"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mitecoder"]
+packages = ["backend/src/mitecoder", "cli/src/mitecoder_cli"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-pythonpath = ["src"]
+pythonpath = ["backend/src", "cli/src"]
 
 [tool.ruff]
 line-length = 100

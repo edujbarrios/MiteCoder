@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 import yaml
-
 from mitecoder.config.schema import (
     AgentConfig,
     Config,
