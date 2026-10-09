@@ -110,7 +110,7 @@ quantization, context length, llama.cpp build, operating system, and hardware.
 ```bash
 python -m pip install -e ".[dev]"
 python -m pytest
-python -m ruff check src tests
+python -m ruff check backend/src cli/src tests scripts
 npm ci
 npm run check
 npm run build

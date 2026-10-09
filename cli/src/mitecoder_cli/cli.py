@@ -13,7 +13,12 @@ from mitecoder.config.loader import load_config
 from mitecoder.env import environment_report
 from mitecoder.exceptions import MiteCoderError
 from mitecoder.inference.factory import create_backend
-from mitecoder.inference.model_manifest import download_model, load_manifest, verify_model
+from mitecoder.inference.model_manifest import (
+    download_model,
+    load_manifest,
+    packaged_manifest_path,
+    verify_model,
+)
 from mitecoder.inference.scripted_backend import ScriptedInferenceBackend
 from mitecoder.repository.scanner import inspect_workspace
 from mitecoder.repository.workspace import Workspace
@@ -76,7 +81,7 @@ def _model_manifest_path() -> Path:
     development_manifest = Path("models/manifest.yaml")
     if development_manifest.is_file():
         return development_manifest
-    return Path(__file__).with_name("data") / "models.yaml"
+    return packaged_manifest_path()
 
 
 def parser() -> argparse.ArgumentParser:
