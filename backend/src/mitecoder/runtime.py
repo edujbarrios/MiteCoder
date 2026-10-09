@@ -14,9 +14,9 @@ from mitecoder.config.fingerprint import run_fingerprint
 from mitecoder.config.schema import Config
 from mitecoder.metrics.collector import MetricsCollector, peak_rss_mb
 from mitecoder.repository.workspace import Workspace
-from mitecoder.subprocess_utils import run_text
 from mitecoder.retrieval.context_builder import ContextBuilder
 from mitecoder.retrieval.factory import create_retriever
+from mitecoder.subprocess_utils import run_text
 from mitecoder.tools.apply_patch import ApplyPatchTool
 from mitecoder.tools.file_tools import ListFilesTool, ReadFileTool, SearchCodeTool
 from mitecoder.tools.git_diff import GitDiffTool
